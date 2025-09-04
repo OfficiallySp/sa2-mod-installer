@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SA2 Mod Installer</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="installer-container">
+        <!-- Header -->
+        <div class="header">
+            <img src="assets/sonic_icon.png" alt="Sonic" class="sonic-icon">
+            <h1>SA2 Mod Installer</h1>
+        </div>
+
+        <!-- Content Area -->
+        <div class="content">
+            <!-- Step 1: Welcome -->
+            <div id="step-welcome" class="step active">
+                <h2>Welcome to the SA2 Mod Installer</h2>
+                <div class="description">
+                    <p>This installer will help you set up the best mods for Sonic Adventure 2 on PC.</p>
+                    <p>The installer will:</p>
+                    <ul>
+                        <li>Detect your Sonic Adventure 2 installation</li>
+                        <li>Install the SA2 Mod Manager</li>
+                        <li>Download and configure recommended mods</li>
+                        <li>Set up everything for the optimal SA2 experience</li>
+                    </ul>
+                    <p><strong>Note:</strong> Make sure you have Sonic Adventure 2 installed on your PC before proceeding.</p>
+                </div>
+                <div class="warning-box">
+                    <p>⚠️ This installer requires an active internet connection to download mods from GameBanana.</p>
+                </div>
+            </div>
+
+            <!-- Step 2: Game Detection -->
+            <div id="step-detect" class="step">
+                <h2>Game Detection</h2>
+                <div class="description">
+                    <p>Searching for Sonic Adventure 2 installation...</p>
+                    <div class="detection-status">
+                        <div class="spinner" id="detection-spinner"></div>
+                        <p id="detection-message">Scanning system...</p>
+                    </div>
+                    <div id="game-found" class="hidden">
+                        <div class="success-box">
+                            <p>✅ Sonic Adventure 2 found!</p>
+                            <p class="game-path" id="game-path"></p>
+                        </div>
+                    </div>
+                    <div id="game-not-found" class="hidden">
+                        <div class="error-box">
+                            <p>❌ Could not automatically detect Sonic Adventure 2.</p>
+                            <p>Please browse to your game installation folder.</p>
+                            <p>For Example "C:\Program Files\Steam\steamapps\common\Sonic Adventure 2".</p>
+                        </div>
+                        <button class="browse-btn" id="browse-btn">Browse...</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3: Mod Selection -->
+            <div id="step-mods" class="step">
+                <h2>Mod Selection Guide</h2>
+                <div class="description">
+                    <p>Check the checkbox if you want to install this mod.</p>
+                </div>
+                <div class="mod-showcase" id="mod-showcase">
+                    <!-- This will be populated dynamically -->
+                </div>
+                <div class="mod-selector hidden" id="mod-selector">
+                    <div class="mod-list" id="mod-list">
+                        <!-- Mod checkboxes will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 4: Installation -->
+            <div id="step-install" class="step">
+                <h2>Installing Mods</h2>
+                <div class="description">
+                    <div class="install-progress">
+                        <p id="install-status">Preparing installation...</p>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-fill"></div>
+                        </div>
+                        <p id="install-details"></p>
+                    </div>
+                    <div id="install-complete" class="hidden">
+                        <div class="success-box">
+                            <p>✅ Installation Complete!</p>
+                            <p>All selected mods have been installed successfully.</p>
+                            <p>You can now launch Sonic Adventure 2 with the SA2 Mod Manager.</p>
+                        </div>
+                    </div>
+                    <div id="install-error" class="hidden">
+                        <div class="error-box">
+                            <p>❌ Installation Error</p>
+                            <p id="error-message"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 5: Complete -->
+            <div id="step-complete" class="step">
+                <h2>Installation Complete!</h2>
+                <div class="description">
+                    <div class="success-box large">
+                        <h3>🎉 Success!</h3>
+                        <p>Sonic Adventure 2 mods have been installed successfully.</p>
+                    </div>
+                    <div class="next-steps">
+                        <h3>Next Steps:</h3>
+                        <ol>
+                            <li>Launch SA2 Mod Manager from your game folder</li>
+                            <li>Configure any additional mod settings if needed</li>
+                            <li>Install the SA2 Mod Loader from the Mod Manager</li>
+                            <li>Click "Save & Play" in the Mod Manager to start the game</li>
+                        </ol>
+                    </div>
+                    <div class="info-box">
+                        <p>For more mods and updates, visit:</p>
+                        <button class="link-btn" onclick="window.api.openExternal('https://gamebanana.com/mods/games/5855')">
+                            More SA2 Mods
+                        </button>
+                        <button class="link-btn" onclick="testGameBananaAPI()">
+                            Test API Connection
+                        </button>
+                        <div id="api-test-result" style="margin-top: 10px; font-size: 12px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Buttons -->
+        <div class="navigation">
+            <button id="back-btn" class="nav-btn" disabled>← Back</button>
+            <button id="next-btn" class="nav-btn">Next →</button>
+            <button id="cancel-btn" class="nav-btn">Cancel</button>
+        </div>
+    </div>
+
+    <script src="renderer.js"></script>
+</body>
+</html>

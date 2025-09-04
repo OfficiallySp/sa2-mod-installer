@@ -1,0 +1,41 @@
+{
+  "name": "sa2-mod-installer",
+  "version": "1.0.0",
+  "description": "Sonic Adventure 2 Mod Installer",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build-win": "electron-builder --win",
+    "build": "electron-builder",
+    "dist": "electron-builder"
+  },
+  "author": "SA2 Mod Installer Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@electron/rebuild": "^3.6.0",
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "dependencies": {
+    "7zip-bin": "^5.2.0",
+    "adm-zip": "^0.5.10",
+    "axios": "^1.6.2",
+    "electron-store": "^8.1.0",
+    "node-stream-zip": "^1.15.0"
+  },
+  "build": {
+    "appId": "com.sa2.modinstaller",
+    "productName": "SA2 Mod Installer",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}
