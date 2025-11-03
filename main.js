@@ -57,7 +57,7 @@ const MODS_LIST = [
     description: 'Replaces most cutscenes with better quality ones that match the original game while fixing other issues. <strong>See a sample:</strong> <a href="assets/cutsceneicat/index.html" target="_blank" style="color:#fff;background:#0078d7;padding:2px 8px;border-radius:3px;text-decoration:none;font-weight:bold;">Click to open preview</a>.',
     required: false,
     gameBananaId: 48872,
-    preview: 'assets/previews/cutscene.png'
+    preview: 'assets/previews/cutscene.gif'
   },
   {
     id: 'hdgui',
@@ -111,8 +111,8 @@ const MODS_LIST = [
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 700,
-    height: 640,
+    width: 640,
+    height: 680,
     resizable: false,
     webPreferences: {
       nodeIntegration: false,
