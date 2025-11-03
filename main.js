@@ -36,11 +36,19 @@ const MODS_LIST = [
     preview: 'assets/previews/modloader.png'
   },
   {
+    id: 'sasdl',
+    name: 'SASDL',
+    description: 'Common prerequisite for input based mods.',
+    required: true,
+    gameBananaId: 615843,
+    preview: 'assets/previews/sasdl.png'
+  },
+  {
     id: 'render',
     name: 'Render Fix',
     description: 'Fixes various rendering issues from the PC/GC versions.',
     required: false,
-    gameBananaId: 452445, // To be provided
+    gameBananaId: 452445,
     preview: 'assets/previews/renderfix.png'
   },
   {
@@ -48,31 +56,63 @@ const MODS_LIST = [
     name: 'Cutscene Revamp',
     description: 'Replaces most cutscenes with better quality ones that match the original cutscenes.',
     required: false,
-    gameBananaId: 48872, // To be provided
+    gameBananaId: 48872,
     preview: 'assets/previews/cutscene.png'
-  },
-  {
-    id: 'volume',
-    name: 'Volume Control',
-    description: 'Adjusts the volume mixing of the game.',
-    required: false,
-    gameBananaId: 381193, // To be provided
-    preview: 'assets/previews/volume.png'
   },
   {
     id: 'hdgui',
     name: 'HD GUI',
     description: 'Replaces the GUI with a high resolution one.',
     required: false,
-    gameBananaId: 33171, // To be provided
-    preview: 'assets/previews/hdgui.png'
-  }
+    gameBananaId: 33171,
+    preview: 'assets/previews/hdgui.webm'
+  },
+  {
+    id: 'enhancedchaoworld',
+    name: 'Chao World Extended',
+    description: 'Improves the Chao World with new features and content.',
+    required: false,
+    gameBananaId: 48840,
+    preview: 'assets/previews/chaoext.gif'
+  },
+  {
+    id: 'chaoworldextended',
+    name: 'Enhanced Chao World',
+    description: 'Enhances the Chao World with more features and content. (compatible with Enhanced Chao World)',
+    required: false,
+    gameBananaId: 48915,
+    preview: 'assets/previews/chaoext.gif'
+  },
+  {
+    id: 'character',
+    name: 'Character Select Plus',
+    description: 'Play as any character in any stage.',
+    required: false,
+    gameBananaId: 33170,
+    preview: 'assets/previews/character.png'
+  },
+  {
+    id: 'volume',
+    name: 'Volume Control',
+    description: 'Adjusts the volume mixing of the game.',
+    required: false,
+    gameBananaId: 381193,
+    preview: 'assets/previews/volume.png'
+  },
+  {
+    id: 'input',
+    name: 'Input Fix',
+    description: 'Fixes the input system of the game. adds support for many more controllers.',
+    required: false,
+    gameBananaId: 515637,
+    preview: 'assets/previews/input.gif'
+  },
 ];
 
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 700,
-    height: 600,
+    height: 640,
     resizable: false,
     webPreferences: {
       nodeIntegration: false,
