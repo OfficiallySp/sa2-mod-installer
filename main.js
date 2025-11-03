@@ -65,7 +65,7 @@ const MODS_LIST = [
     description: 'Replaces the GUI with a high resolution one.',
     required: false,
     gameBananaId: 33171,
-    preview: 'assets/previews/hdgui.webm'
+    preview: 'assets/previews/hdgui.gif'
   },
   {
     id: 'enhancedchaoworld',
