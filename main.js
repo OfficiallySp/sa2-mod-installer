@@ -49,12 +49,12 @@ const MODS_LIST = [
     description: 'Fixes various rendering issues from the PC/GC versions.',
     required: false,
     gameBananaId: 452445,
-    preview: 'assets/previews/renderfix.png'
+    preview: 'assets/previews/renderfix.gif'
   },
   {
     id: 'cutscene',
     name: 'Cutscene Revamp',
-    description: 'Replaces most cutscenes with better quality ones that match the original cutscenes.',
+    description: 'Replaces most cutscenes with better quality ones that match the original game while fixing other issues. <strong>See a sample:</strong> <a href="assets/cutsceneicat/index.html" target="_blank" style="color:#fff;background:#0078d7;padding:2px 8px;border-radius:3px;text-decoration:none;font-weight:bold;">Click to open preview</a>.',
     required: false,
     gameBananaId: 48872,
     preview: 'assets/previews/cutscene.png'
@@ -89,7 +89,7 @@ const MODS_LIST = [
     description: 'Play as any character in any stage.',
     required: false,
     gameBananaId: 33170,
-    preview: 'assets/previews/character.png'
+    preview: 'assets/previews/character.gif'
   },
   {
     id: 'volume',
