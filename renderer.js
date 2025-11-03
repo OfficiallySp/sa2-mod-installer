@@ -19,8 +19,19 @@ const nextBtn = document.getElementById('next-btn');
 const cancelBtn = document.getElementById('cancel-btn');
 
 // Initialize
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     updateNavigation();
+    
+    // Load and display version number
+    try {
+        const version = await window.api.getVersion();
+        const versionElement = document.getElementById('version-number');
+        if (versionElement && version) {
+            versionElement.textContent = `v${version}`;
+        }
+    } catch (error) {
+        console.error('Failed to load version:', error);
+    }
     
     // Button event listeners
     backBtn.addEventListener('click', previousStep);
@@ -294,6 +305,7 @@ async function startInstallation() {
     const progressFill = document.getElementById('progress-fill');
     const completeDiv = document.getElementById('install-complete');
     const errorDiv = document.getElementById('install-error');
+    const openModloaderCheckbox = document.getElementById('open-modloader-checkbox');
     
     // Reset UI
     completeDiv.classList.add('hidden');
@@ -301,6 +313,9 @@ async function startInstallation() {
     nextBtn.disabled = true;
     backBtn.disabled = true;
     cancelBtn.disabled = true;
+    
+    // Disable checkbox during installation
+    openModloaderCheckbox.disabled = true;
     
     // Set up progress listener
     window.api.onInstallProgress((data) => {
@@ -320,9 +335,11 @@ async function startInstallation() {
     });
     
     try {
+        const openModloader = openModloaderCheckbox.checked;
         const result = await window.api.installMods({
             gamePath: gamePath,
-            selectedMods: selectedMods
+            selectedMods: selectedMods,
+            openModloader: openModloader
         });
         
         if (result.success) {
@@ -341,6 +358,9 @@ async function startInstallation() {
         document.getElementById('error-message').textContent = error.message;
         backBtn.disabled = false;
         cancelBtn.disabled = false;
+    } finally {
+        // Re-enable checkbox after installation
+        openModloaderCheckbox.disabled = false;
     }
     
     // Clean up listener

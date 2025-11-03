@@ -1,6 +1,6 @@
 {
   "name": "sa2-mod-installer",
-  "version": "1.0.0",
+  "version": "0.0.6",
   "description": "Sonic Adventure 2 Mod Installer",
   "main": "main.js",
   "scripts": {

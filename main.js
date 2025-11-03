@@ -10,6 +10,9 @@ const { exec } = require('child_process');
 const { promisify } = require('util');
 const execAsync = promisify(exec);
 
+// Load package.json to get version
+const packageJson = require('./package.json');
+
 let mainWindow;
 
 // Configuration
@@ -205,7 +208,7 @@ ipcMain.handle('get-mods-list', async () => {
 });
 
 // Download and install mods
-ipcMain.handle('install-mods', async (event, { gamePath, selectedMods }) => {
+ipcMain.handle('install-mods', async (event, { gamePath, selectedMods, openModloader }) => {
   try {
     const modsPath = path.join(gamePath, CONFIG.defaultModsPath);
     
@@ -260,6 +263,21 @@ ipcMain.handle('install-mods', async (event, { gamePath, selectedMods }) => {
     });
 
     await configureModsIni(gamePath, selectedMods);
+
+    // Open mod manager if requested
+    if (openModloader) {
+      const modManagerPath = path.join(gamePath, 'SA2ModManager.exe');
+      try {
+        // Check if the file exists
+        await fs.access(modManagerPath);
+        // Open the mod manager
+        shell.openPath(modManagerPath);
+        console.log('Opened SA2 Mod Manager');
+      } catch (error) {
+        console.error('Failed to open mod manager:', error);
+        // Don't fail the installation if we can't open the mod manager
+      }
+    }
 
     return { success: true };
   } catch (error) {
@@ -693,4 +711,9 @@ ipcMain.handle('test-api', async (event, modId) => {
 // Open external links
 ipcMain.handle('open-external', async (event, url) => {
   shell.openExternal(url);
+});
+
+// Get app version
+ipcMain.handle('get-version', async () => {
+  return packageJson.version;
 });

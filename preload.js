@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('api', {
   installMods: (data) => ipcRenderer.invoke('install-mods', data),
   openExternal: (url) => ipcRenderer.invoke('open-external', url),
   testApi: (modId) => ipcRenderer.invoke('test-api', modId),
+  getVersion: () => ipcRenderer.invoke('get-version'),
   
   // Listen for progress updates
   onInstallProgress: (callback) => {

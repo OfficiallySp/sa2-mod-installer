@@ -38,9 +38,22 @@ body {
     margin-right: 15px;
 }
 
+.header-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
 .header h1 {
     font-size: 18px;
     font-weight: 500;
+    margin: 0;
+}
+
+.version-number {
+    font-size: 11px;
+    opacity: 0.8;
+    font-weight: 400;
 }
 
 /* Content Area */
