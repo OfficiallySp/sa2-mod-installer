@@ -26,7 +26,7 @@ body {
 .header {
     background: linear-gradient(to right, #2c5282, #2d3748);
     color: white;
-    padding: 10px 20px;
+    padding: 7px 10px;
     display: flex;
     align-items: center;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -45,13 +45,13 @@ body {
 }
 
 .header h1 {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 500;
     margin: 0;
 }
 
 .version-number {
-    font-size: 11px;
+    font-size: 12px;
     opacity: 0.8;
     font-weight: 400;
 }
@@ -59,7 +59,7 @@ body {
 /* Content Area */
 .content {
     flex: 1;
-    padding: 5px;
+    padding: 7px;
     background: white;
     overflow-y: auto;
 }
@@ -81,15 +81,14 @@ body {
 
 .step h2 {
     color: #2c5282;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
     font-size: 20px;
     border-bottom: 2px solid #e2e8f0;
-    padding-bottom: 5px;
 }
 
 .description {
     color: #4a5568;
-    line-height: 1.6;
+    line-height: 1.5;
 }
 
 .description p {
@@ -98,18 +97,18 @@ body {
 
 .description ul, .description ol {
     margin-left: 25px;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
 }
 
 .description li {
-    margin-bottom: 5px;
+    margin-bottom: 3px;
 }
 
 /* Status Boxes */
 .warning-box, .error-box, .success-box, .info-box {
     padding: 8px;
     border-radius: 5px;
-    margin: 15px 0;
+    margin: 10px 0;
 }
 
 .warning-box {
@@ -146,7 +145,7 @@ body {
 .detection-status {
     display: flex;
     align-items: center;
-    padding: 10px;
+    padding: 5px;
 }
 
 .spinner {
@@ -177,7 +176,7 @@ body {
     border: 1px solid #cbd5e0;
     border-radius: 5px;
     padding: 8px;
-    margin: 15px 0;
+    margin: 10px 0;
     min-height: 300px;
     display: flex;
     flex-direction: column;
@@ -200,7 +199,7 @@ body {
 
 
 .mod-info {
-    margin-top: 15px;
+    margin-top: 10px;
     text-align: center;
 }
 
@@ -209,13 +208,36 @@ body {
     margin-bottom: 8px;
 }
 
+.mod-meta {
+    margin-bottom: 10px;
+    font-size: 13px;
+    color: #718096;
+}
+
+.mod-author {
+    font-weight: 500;
+    color: #4a5568;
+}
+
+.mod-link {
+    color: #3182ce;
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.mod-link:hover {
+    color: #2c5aa0;
+    text-decoration: underline;
+}
+
 .mod-info p {
     color: #718096;
     font-size: 14px;
 }
 
 .mod-checkbox {
-    margin-top: 15px;
+    margin-top: 10px;
     display: flex;
     align-items: center;
     justify-content: center;

@@ -10,6 +10,39 @@ const { exec } = require('child_process');
 const { promisify } = require('util');
 const execAsync = promisify(exec);
 
+// Helper function to get the correct path to 7za executable
+// Handles both development and packaged builds (with asar unpacking)
+function get7zaPath() {
+  let sevenZipPath = sevenBin.path7za;
+  
+  // Check if we're running from a packaged app
+  if (app.isPackaged && process.resourcesPath) {
+    // In packaged builds, check if path points to app.asar
+    if (sevenZipPath.includes('app.asar')) {
+      // Replace app.asar with app.asar.unpacked
+      const unpackedPath = sevenZipPath.replace('app.asar', 'app.asar.unpacked');
+      
+      // Check if unpacked version exists
+      if (fsSync.existsSync(unpackedPath)) {
+        return unpackedPath;
+      }
+      
+      // Alternative: construct path from resources directory
+      // Extract the relative path from app.asar
+      const asarIndex = sevenZipPath.indexOf('app.asar');
+      if (asarIndex !== -1) {
+        const pathAfterAsar = sevenZipPath.substring(asarIndex + 'app.asar'.length);
+        const unpackedFullPath = path.join(process.resourcesPath, 'app.asar.unpacked', pathAfterAsar);
+        if (fsSync.existsSync(unpackedFullPath)) {
+          return unpackedFullPath;
+        }
+      }
+    }
+  }
+  
+  return sevenZipPath;
+}
+
 // Load package.json to get version
 const packageJson = require('./package.json');
 
@@ -36,7 +69,8 @@ const MODS_LIST = [
     required: true,
     gameBananaId: null, // Not from GameBanana - handled separately
     downloadUrl: 'https://github.com/X-Hax/SA-Mod-Manager/releases/latest', // Official source
-    preview: 'assets/previews/modloader.png'
+    preview: 'assets/previews/modloader.png',
+    author: 'X-Hax'
   },
   {
     id: 'sasdl',
@@ -44,7 +78,8 @@ const MODS_LIST = [
     description: 'Common prerequisite for input based mods.',
     required: true,
     gameBananaId: 615843,
-    preview: 'assets/previews/sasdl.png'
+    preview: 'assets/previews/sasdl.png',
+    author: 'Shaddatic'
   },
   {
     id: 'render',
@@ -52,7 +87,8 @@ const MODS_LIST = [
     description: 'Fixes various rendering issues from the PC/GC versions.',
     required: false,
     gameBananaId: 452445,
-    preview: 'assets/previews/renderfix.gif'
+    preview: 'assets/previews/renderfix.gif',
+    author: 'Shaddatic'
   },
   {
     id: 'cutscene',
@@ -60,7 +96,8 @@ const MODS_LIST = [
     description: 'Replaces most cutscenes with better quality ones that match the original game while fixing other issues. <strong>See a sample:</strong> <a href="assets/cutsceneicat/index.html" target="_blank" style="color:#fff;background:#0078d7;padding:2px 8px;border-radius:3px;text-decoration:none;font-weight:bold;">Click to open preview</a>.',
     required: false,
     gameBananaId: 48872,
-    preview: 'assets/previews/cutscene.gif'
+    preview: 'assets/previews/cutscene.gif',
+    author: 'SPEEPSHighway & End User'
   },
   {
     id: 'hdgui',
@@ -68,7 +105,8 @@ const MODS_LIST = [
     description: 'Replaces the GUI with a high resolution one.',
     required: false,
     gameBananaId: 33171,
-    preview: 'assets/previews/hdgui.gif'
+    preview: 'assets/previews/hdgui.gif',
+    author: 'SPEEPSHighway'
   },
   {
     id: 'enhancedchaoworld',
@@ -76,7 +114,8 @@ const MODS_LIST = [
     description: 'Improves the Chao World with new features and content.',
     required: false,
     gameBananaId: 48840,
-    preview: 'assets/previews/chaoext.gif'
+    preview: 'assets/previews/chaoext.gif',
+    author: 'DarkyBenji & CWE Team'
   },
   {
     id: 'chaoworldextended',
@@ -84,7 +123,8 @@ const MODS_LIST = [
     description: 'Enhances the Chao World with more features and content. (compatible with Enhanced Chao World)',
     required: false,
     gameBananaId: 48915,
-    preview: 'assets/previews/chaoext.gif'
+    preview: 'assets/previews/chaoext.gif',
+    author: 'Shaddatic'
   },
   {
     id: 'character',
@@ -92,7 +132,8 @@ const MODS_LIST = [
     description: 'Play as any character in any stage.',
     required: false,
     gameBananaId: 33170,
-    preview: 'assets/previews/character.gif'
+    preview: 'assets/previews/character.gif',
+    author: 'Justin113D, MainMemory & SORA'
   },
   {
     id: 'volume',
@@ -100,7 +141,8 @@ const MODS_LIST = [
     description: 'Adjusts the volume mixing of the game.',
     required: false,
     gameBananaId: 381193,
-    preview: 'assets/previews/volume.png'
+    preview: 'assets/previews/volume.png',
+    author: 'Shaddatic'
   },
   {
     id: 'input',
@@ -108,13 +150,14 @@ const MODS_LIST = [
     description: 'Fixes the input system of the game. adds support for many more controllers.',
     required: false,
     gameBananaId: 515637,
-    preview: 'assets/previews/input.gif'
+    preview: 'assets/previews/input.gif',
+    author: 'Shaddatic'
   },
 ];
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 640,
+    width: 680,
     height: 680,
     resizable: false,
     webPreferences: {
@@ -598,8 +641,18 @@ async function downloadModFromGameBanana(mod, modsPath) {
         await fs.writeFile(archivePath, response.data);
         
         try {
+          // Get the correct path to 7za executable (handles asar unpacking)
+          const sevenZipPath = get7zaPath();
+          
+          // Verify the executable exists
+          try {
+            await fs.access(sevenZipPath);
+          } catch (accessError) {
+            throw new Error(`7za executable not found at: ${sevenZipPath}. Please ensure the app is properly built with asarUnpack configured.`);
+          }
+          
           // Extract using 7zip-bin
-          const cmd = `"${sevenBin.path7za}" x "${archivePath}" -o"${modFolder}" -y`;
+          const cmd = `"${sevenZipPath}" x "${archivePath}" -o"${modFolder}" -y`;
           console.log(`Executing 7z command: ${cmd}`);
           
           const { stdout, stderr } = await execAsync(cmd);

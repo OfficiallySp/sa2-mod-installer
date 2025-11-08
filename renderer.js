@@ -226,6 +226,25 @@ function showNextMod() {
     if (currentModIndex < modsList.length) {
         const mod = modsList[currentModIndex];
         
+        // Build GameBanana link if available
+        const gameBananaLink = mod.gameBananaId 
+            ? `https://gamebanana.com/mods/${mod.gameBananaId}` 
+            : null;
+        
+        // Build author and link HTML
+        let authorLinkHtml = '';
+        if (mod.author || gameBananaLink) {
+            authorLinkHtml = '<div class="mod-meta">';
+            if (mod.author) {
+                authorLinkHtml += `<span class="mod-author">By ${mod.author}</span>`;
+            }
+            if (gameBananaLink) {
+                if (mod.author) authorLinkHtml += ' • ';
+                authorLinkHtml += `<a href="#" class="mod-link" data-url="${gameBananaLink}">View on GameBanana</a>`;
+            }
+            authorLinkHtml += '</div>';
+        }
+        
         // Create mod showcase HTML
         showcase.innerHTML = `
             <div class="mod-preview">
@@ -235,6 +254,7 @@ function showNextMod() {
             </div>
             <div class="mod-info">
                 <h3>${mod.name}</h3>
+                ${authorLinkHtml}
                 <p>${mod.description}</p>
             </div>
             <div class="mod-checkbox">
@@ -257,6 +277,18 @@ function showNextMod() {
         previewImg.addEventListener('click', () => {
             // Could implement image preview modal here
         });
+        
+        // Add click handler for GameBanana link
+        const gameBananaLinkEl = showcase.querySelector('.mod-link');
+        if (gameBananaLinkEl) {
+            gameBananaLinkEl.addEventListener('click', (e) => {
+                e.preventDefault();
+                const url = gameBananaLinkEl.getAttribute('data-url');
+                if (url) {
+                    window.api.openExternal(url);
+                }
+            });
+        }
     } else {
         // Show summary of selected mods
         showModSummary();

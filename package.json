@@ -1,6 +1,6 @@
 {
   "name": "sa2-mod-installer",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "Sonic Adventure 2 Mod Installer",
   "main": "main.js",
   "scripts": {
@@ -29,6 +29,9 @@
     "directories": {
       "output": "dist"
     },
+    "asarUnpack": [
+      "**/node_modules/7zip-bin/**/*"
+    ],
     "win": {
       "target": "nsis",
       "icon": "assets/icon.ico"
