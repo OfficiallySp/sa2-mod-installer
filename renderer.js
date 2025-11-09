@@ -402,28 +402,3 @@ async function startInstallation() {
 // Initialize first step
 showStep(0);
 
-// Test GameBanana API function
-async function testGameBananaAPI() {
-    const resultDiv = document.getElementById('api-test-result');
-    resultDiv.innerHTML = 'Testing API connection...';
-    
-    try {
-        // Test with the first mod ID (SA2 Mod Loader)
-        const result = await window.api.testApi(15436);
-        
-        if (result.success) {
-            resultDiv.innerHTML = `<span style="color: green;">✅ API Test Successful!</span><br>
-                                 Found ${result.data._aFiles ? result.data._aFiles.length : 0} files.`;
-            console.log('API Test Result:', result.data);
-        } else {
-            resultDiv.innerHTML = `<span style="color: red;">❌ API Test Failed:</span><br>
-                                 ${result.error}`;
-            if (result.response) {
-                console.log('Error response:', result.response);
-            }
-        }
-    } catch (error) {
-        resultDiv.innerHTML = `<span style="color: red;">❌ Test Error: ${error.message}</span>`;
-        console.error('Test error:', error);
-    }
-}

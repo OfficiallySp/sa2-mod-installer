@@ -48,6 +48,21 @@ const packageJson = require('./package.json');
 
 let mainWindow;
 
+// Logging helper - only log in development or when explicitly enabled
+const isDevelopment = process.env.NODE_ENV === 'development' || !app.isPackaged;
+const logger = {
+  log: (...args) => {
+    if (isDevelopment) console.log(...args);
+  },
+  error: (...args) => {
+    // Always log errors
+    console.error(...args);
+  },
+  warn: (...args) => {
+    if (isDevelopment) console.warn(...args);
+  }
+};
+
 // Configuration
 const CONFIG = {
   gameExecutables: ['sonic2app.exe', 'Sonic Adventure 2.exe'],
@@ -242,6 +257,9 @@ ipcMain.handle('browse-game-folder', async () => {
 
 // Validate game installation path
 ipcMain.handle('validate-game-path', async (event, gamePath) => {
+  if (!gamePath || typeof gamePath !== 'string') {
+    return false;
+  }
   return await validateGamePath(gamePath);
 });
 
@@ -253,6 +271,17 @@ ipcMain.handle('get-mods-list', async () => {
 // Download and install mods
 ipcMain.handle('install-mods', async (event, { gamePath, selectedMods, openModloader }) => {
   try {
+    // Input validation
+    if (!gamePath || typeof gamePath !== 'string') {
+      throw new Error('Invalid game path provided');
+    }
+    if (!Array.isArray(selectedMods)) {
+      throw new Error('Invalid mods selection provided');
+    }
+    if (!await validateGamePath(gamePath)) {
+      throw new Error('Invalid game installation path');
+    }
+    
     const modsPath = path.join(gamePath, CONFIG.defaultModsPath);
     
     // Create mods directory if it doesn't exist
@@ -652,8 +681,13 @@ async function downloadModFromGameBanana(mod, modsPath) {
           }
           
           // Extract using 7zip-bin
-          const cmd = `"${sevenZipPath}" x "${archivePath}" -o"${modFolder}" -y`;
-          console.log(`Executing 7z command: ${cmd}`);
+          // Sanitize paths to prevent command injection
+          const sanitizedSevenZipPath = sevenZipPath.replace(/"/g, '');
+          const sanitizedArchivePath = archivePath.replace(/"/g, '');
+          const sanitizedModFolder = modFolder.replace(/"/g, '');
+          
+          const cmd = `"${sanitizedSevenZipPath}" x "${sanitizedArchivePath}" -o"${sanitizedModFolder}" -y`;
+          logger.log(`Executing 7z command: ${cmd}`);
           
           const { stdout, stderr } = await execAsync(cmd);
           
@@ -706,6 +740,44 @@ async function configureModsIni(gamePath, selectedMods) {
   // Create or update the mods configuration file
   const configPath = path.join(gamePath, 'mods.ini');
   
+  let existingConfig = '';
+  let existingMods = new Map();
+  
+  // Try to read existing config to preserve it
+  try {
+    existingConfig = await fs.readFile(configPath, 'utf8');
+    
+    // Parse existing mod entries (simple INI parser)
+    const lines = existingConfig.split('\n');
+    let currentSection = '';
+    let currentMod = {};
+    
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+        // Save previous mod if exists
+        if (currentSection && currentSection !== 'ModManager' && currentSection !== 'Main') {
+          existingMods.set(currentSection, currentMod);
+        }
+        currentSection = trimmed.slice(1, -1);
+        currentMod = {};
+      } else if (trimmed && !trimmed.startsWith(';') && trimmed.includes('=')) {
+        const [key, ...valueParts] = trimmed.split('=');
+        const value = valueParts.join('=').trim();
+        currentMod[key.trim()] = value;
+      }
+    }
+    
+    // Save last mod
+    if (currentSection && currentSection !== 'ModManager' && currentSection !== 'Main') {
+      existingMods.set(currentSection, currentMod);
+    }
+  } catch (error) {
+    // File doesn't exist or can't be read, start fresh
+    existingConfig = '';
+  }
+  
+  // Build new config
   let config = '[ModManager]\n';
   config += 'EnabledMods=';
   
@@ -717,22 +789,48 @@ async function configureModsIni(gamePath, selectedMods) {
   
   config += enabledMods.join(',') + '\n\n';
   
-  // Add mod entries
+  // Add mod entries (update existing or add new)
   for (const modId of selectedMods) {
     const mod = MODS_LIST.find(m => m.id === modId);
     if (mod) {
       config += `[${mod.id}]\n`;
       config += `Name=${mod.name}\n`;
-      config += `Enabled=1\n\n`;
+      config += `Enabled=1\n`;
+      
+      // Preserve other settings from existing config if present
+      if (existingMods.has(mod.id)) {
+        const existingMod = existingMods.get(mod.id);
+        for (const [key, value] of Object.entries(existingMod)) {
+          if (key !== 'Name' && key !== 'Enabled') {
+            config += `${key}=${value}\n`;
+          }
+        }
+      }
+      
+      config += '\n';
+    }
+  }
+  
+  // Preserve other mods that weren't selected but exist in config
+  for (const [modId, modData] of existingMods.entries()) {
+    if (!selectedMods.includes(modId)) {
+      config += `[${modId}]\n`;
+      for (const [key, value] of Object.entries(modData)) {
+        config += `${key}=${value}\n`;
+      }
+      config += '\n';
     }
   }
   
   await fs.writeFile(configPath, config);
 }
 
-// Test GameBanana API connection
+// Test GameBanana API connection (for debugging)
 ipcMain.handle('test-api', async (event, modId) => {
   try {
+    if (!modId || (typeof modId !== 'number' && typeof modId !== 'string')) {
+      throw new Error('Invalid mod ID provided');
+    }
     const apiUrl = `https://gamebanana.com/apiv8/Mod/${modId}?_csvProperties=_aFiles,_sName,_idRow`;
     const response = await axios.get(apiUrl, {
       headers: {
@@ -763,7 +861,16 @@ ipcMain.handle('test-api', async (event, modId) => {
 
 // Open external links
 ipcMain.handle('open-external', async (event, url) => {
-  shell.openExternal(url);
+  if (!url || typeof url !== 'string') {
+    throw new Error('Invalid URL provided');
+  }
+  // Basic URL validation
+  try {
+    new URL(url);
+  } catch {
+    throw new Error('Invalid URL format');
+  }
+  await shell.openExternal(url);
 });
 
 // Get app version
