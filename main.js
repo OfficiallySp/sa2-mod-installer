@@ -135,10 +135,10 @@ const MODS_LIST = [
   {
     id: 'chaoworldextended',
     name: 'Enhanced Chao World',
-    description: 'Enhances the Chao World with more features and content. (compatible with Enhanced Chao World)',
+    description: 'Enhances the Chao World with more features and content. (compatible with Chao World Extended)',
     required: false,
     gameBananaId: 48915,
-    preview: 'assets/previews/chaoext.gif',
+    preview: 'assets/previews/ehchao.gif',
     author: 'Shaddatic'
   },
   {
