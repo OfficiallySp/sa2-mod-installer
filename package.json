@@ -1,7 +1,7 @@
 {
-  "name": "sa2-mod-installer",
+  "name": "the-definitizer",
   "version": "1.0.1",
-  "description": "Sonic Adventure 2 Mod Installer",
+  "description": "The Definitizer - Multi-Game Sonic Mod Installer",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -9,7 +9,7 @@
     "build": "electron-builder",
     "dist": "electron-builder"
   },
-  "author": "SA2 Mod Installer Team",
+  "author": "The Definitizer Team",
   "license": "MIT",
   "devDependencies": {
     "@electron/rebuild": "^3.6.0",
@@ -24,8 +24,8 @@
     "node-stream-zip": "^1.15.0"
   },
   "build": {
-    "appId": "com.sa2.modinstaller",
-    "productName": "SA2 Mod Installer",
+    "appId": "com.definitizer.modinstaller",
+    "productName": "The Definitizer",
     "directories": {
       "output": "dist"
     },

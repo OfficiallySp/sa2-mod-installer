@@ -1,11 +1,14 @@
 // Wizard state
 let currentStep = 0;
+let currentGameId = null;
+let currentGameConfig = null;
 let gamePath = null;
 let modsList = [];
 let selectedMods = [];
 let currentModIndex = 0;
 
 const steps = [
+    'step-launcher',
     'step-welcome',
     'step-detect', 
     'step-mods',
@@ -47,6 +50,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (browseBtn) {
         browseBtn.addEventListener('click', browseForGame);
     }
+    
+    // Load launcher games
+    if (steps[currentStep] === 'step-launcher') {
+        loadLauncherGames();
+    }
 });
 
 // Navigation functions
@@ -61,6 +69,12 @@ function showStep(index) {
     
     // Execute step-specific logic
     switch(steps[index]) {
+        case 'step-launcher':
+            loadLauncherGames();
+            break;
+        case 'step-welcome':
+            loadWelcomeScreen();
+            break;
         case 'step-detect':
             detectGame();
             break;
@@ -70,6 +84,9 @@ function showStep(index) {
         case 'step-install':
             startInstallation();
             break;
+        case 'step-complete':
+            loadCompleteScreen();
+            break;
     }
     
     updateNavigation();
@@ -78,8 +95,14 @@ function showStep(index) {
 function nextStep() {
     if (currentStep < steps.length - 1) {
         // Validation before moving to next step
+        if (steps[currentStep] === 'step-launcher' && !currentGameId) {
+            alert('Please select a game to continue.');
+            return;
+        }
+        
         if (steps[currentStep] === 'step-detect' && !gamePath) {
-            alert('Please select your Sonic Adventure 2 installation folder before continuing.');
+            const gameName = currentGameConfig ? currentGameConfig.name : 'the game';
+            alert(`Please select your ${gameName} installation folder before continuing.`);
             return;
         }
         
@@ -93,11 +116,14 @@ function nextStep() {
                 showNextMod();
                 return;
             } else {
-                // All mods shown, check if any selected
-                if (selectedMods.length === 0 && !modsList.some(m => m.required)) {
+                // All mods shown (or no mods available)
+                // Only block if there are mods available but none selected and no required mods
+                // Allow proceeding if modsList is empty (games with no mods) or if mods are selected
+                if (modsList.length > 0 && selectedMods.length === 0 && !modsList.some(m => m.required)) {
                     alert('Please select at least one mod to install.');
                     return;
                 }
+                // If modsList is empty, allow proceeding (games with no mods available)
             }
         }
         
@@ -131,6 +157,9 @@ function updateNavigation() {
     // Update next button text and state
     if (currentStep === steps.length - 1) {
         nextBtn.textContent = 'Finish';
+    } else if (steps[currentStep] === 'step-launcher') {
+        nextBtn.textContent = 'Select Game';
+        nextBtn.disabled = !currentGameId;
     } else if (steps[currentStep] === 'step-install') {
         nextBtn.textContent = 'Next →';
         nextBtn.disabled = true; // Will be enabled when installation completes
@@ -148,22 +177,175 @@ function updateNavigation() {
     }
 }
 
+// Launcher functions
+async function loadLauncherGames() {
+    const gamesGrid = document.getElementById('games-grid');
+    if (!gamesGrid) return;
+    
+    try {
+        const games = await window.api.getGamesList();
+        
+        gamesGrid.innerHTML = games.map(game => `
+            <div class="game-card" data-game-id="${game.id}">
+                <img src="${game.icon || 'assets/placeholder.png'}" alt="${game.name}" onerror="this.src='assets/placeholder.png'">
+                <h3>${game.name}</h3>
+            </div>
+        `).join('');
+        
+        // Add click handlers
+        gamesGrid.querySelectorAll('.game-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const gameId = card.getAttribute('data-game-id');
+                selectGame(gameId);
+            });
+        });
+    } catch (error) {
+        console.error('Failed to load games:', error);
+        gamesGrid.innerHTML = '<p>Error loading games. Please restart the application.</p>';
+    }
+}
+
+async function selectGame(gameId) {
+    try {
+        // Set current game
+        await window.api.setCurrentGame(gameId);
+        currentGameId = gameId;
+        currentGameConfig = await window.api.getCurrentGame();
+        
+        // Update UI - highlight selected card
+        document.querySelectorAll('.game-card').forEach(card => {
+            card.style.borderColor = card.getAttribute('data-game-id') === gameId ? '#3182ce' : '#cbd5e0';
+        });
+        
+        // Enable next button
+        updateNavigation();
+    } catch (error) {
+        console.error('Failed to select game:', error);
+        alert('Failed to select game. Please try again.');
+    }
+}
+
+async function loadWelcomeScreen() {
+    if (!currentGameConfig) {
+        currentGameConfig = await window.api.getCurrentGame();
+    }
+    
+    if (!currentGameConfig) return;
+    
+    // Update title
+    const welcomeTitle = document.getElementById('welcome-title');
+    if (welcomeTitle) {
+        welcomeTitle.textContent = `Welcome to ${currentGameConfig.name} Mod Installer`;
+    }
+    
+    // Update description
+    const welcomeDesc = document.getElementById('welcome-description');
+    if (welcomeDesc) {
+        welcomeDesc.textContent = `This installer will help you set up the best mods for ${currentGameConfig.name} on PC.`;
+    }
+    
+    // Load video
+    const videoContainer = document.getElementById('welcome-video-container');
+    if (videoContainer && currentGameConfig.welcomeVideoUrl) {
+        // Extract video ID from YouTube URL
+        const videoId = extractYouTubeId(currentGameConfig.welcomeVideoUrl);
+        if (videoId) {
+            videoContainer.innerHTML = `
+                <iframe 
+                    src="https://www.youtube.com/embed/${videoId}?rel=0" 
+                    frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowfullscreen>
+                </iframe>
+            `;
+        }
+    }
+}
+
+function extractYouTubeId(url) {
+    // Handle various YouTube URL formats
+    const patterns = [
+        /youtube\.com\/embed\/([^?&]+)/,
+        /youtu\.be\/([^?&]+)/,
+        /youtube\.com\/watch\?v=([^&]+)/
+    ];
+    
+    for (const pattern of patterns) {
+        const match = url.match(pattern);
+        if (match) return match[1];
+    }
+    return null;
+}
+
+async function loadCompleteScreen() {
+    if (!currentGameConfig) {
+        currentGameConfig = await window.api.getCurrentGame();
+    }
+    
+    if (!currentGameConfig) return;
+    
+    // Update all completion messages with the current game name
+    const completeSuccessMessage = document.getElementById('complete-success-message');
+    if (completeSuccessMessage) {
+        completeSuccessMessage.textContent = `${currentGameConfig.name} mods have been installed successfully.`;
+    }
+    
+    // Update install complete message (in case user navigates back/forward)
+    const installCompleteMessage = document.getElementById('install-complete-message');
+    if (installCompleteMessage && currentGameConfig) {
+        const modManagerName = currentGameId === 'sa2' ? 'SA2 Mod Manager' : 'Mod Manager';
+        installCompleteMessage.textContent = `You can now launch ${currentGameConfig.name} with the ${modManagerName}.`;
+    }
+    
+    // Update next steps list to reference the specific game
+    const nextStepsList = document.getElementById('next-steps-list');
+    if (nextStepsList && currentGameConfig) {
+        const modManagerName = currentGameId === 'sa2' ? 'SA2 Mod Manager' : 'Mod Manager';
+        nextStepsList.innerHTML = `
+            <li>Launch the ${modManagerName} from your ${currentGameConfig.name} folder</li>
+            <li>Configure any additional mod settings if needed</li>
+            <li>Click "Save & Play" in the ${modManagerName} to start the game</li>
+        `;
+    }
+}
+
 // Game detection
 async function detectGame() {
+    if (!currentGameConfig) {
+        currentGameConfig = await window.api.getCurrentGame();
+    }
+    
+    if (!currentGameConfig) {
+        alert('No game selected. Please go back and select a game.');
+        return;
+    }
+    
     const spinner = document.getElementById('detection-spinner');
     const message = document.getElementById('detection-message');
     const foundDiv = document.getElementById('game-found');
     const notFoundDiv = document.getElementById('game-not-found');
     const pathElement = document.getElementById('game-path');
+    const detectTitle = document.getElementById('detect-title');
+    const foundMessage = document.getElementById('game-found-message');
+    const notFoundMessage = document.getElementById('game-not-found-message');
+    const pathExample = document.getElementById('game-path-example');
+    
+    // Update titles
+    if (detectTitle) detectTitle.textContent = `${currentGameConfig.name} Detection`;
+    if (foundMessage) foundMessage.textContent = `✅ ${currentGameConfig.name} found!`;
+    if (notFoundMessage) notFoundMessage.textContent = `❌ Could not automatically detect ${currentGameConfig.name}.`;
+    if (pathExample && currentGameConfig.steamFolderName) {
+        pathExample.textContent = `For Example "C:\\Program Files\\Steam\\steamapps\\common\\${currentGameConfig.steamFolderName}".`;
+    }
     
     // Show spinner
     spinner.style.display = 'block';
-    message.textContent = 'Scanning for Sonic Adventure 2...';
+    message.textContent = `Scanning for ${currentGameConfig.name}...`;
     foundDiv.classList.add('hidden');
     notFoundDiv.classList.add('hidden');
     
     try {
-        const result = await window.api.detectGame();
+        const result = await window.api.detectGame(currentGameId);
         
         spinner.style.display = 'none';
         
@@ -188,7 +370,12 @@ async function detectGame() {
 }
 
 async function browseForGame() {
-    const result = await window.api.browseGameFolder();
+    if (!currentGameId) {
+        alert('No game selected. Please go back and select a game.');
+        return;
+    }
+    
+    const result = await window.api.browseGameFolder(currentGameId);
     
     if (result.found) {
         gamePath = result.path;
@@ -204,7 +391,14 @@ async function browseForGame() {
 
 // Mod selection
 async function loadModsList() {
-    modsList = await window.api.getModsList();
+    if (!currentGameId) {
+        currentGameConfig = await window.api.getCurrentGame();
+        if (currentGameConfig) {
+            currentGameId = currentGameConfig.id;
+        }
+    }
+    
+    modsList = await window.api.getModsList(currentGameId);
     currentModIndex = 0;
     selectedMods = [];
     
@@ -245,12 +439,30 @@ function showNextMod() {
             authorLinkHtml += '</div>';
         }
         
+        // Check if preview is a video URL
+        const isVideo = mod.preview && (mod.preview.includes('youtube.com') || mod.preview.includes('youtu.be'));
+        let previewHtml = '';
+        
+        if (isVideo) {
+            const videoId = extractYouTubeId(mod.preview);
+            if (videoId) {
+                previewHtml = `<iframe 
+                    src="https://www.youtube.com/embed/${videoId}?rel=0" 
+                    frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowfullscreen>
+                </iframe>`;
+            } else {
+                previewHtml = `<img src="${mod.preview || 'assets/placeholder.png'}" alt="${mod.name}" title="Click to enlarge">`;
+            }
+        } else {
+            previewHtml = `<img src="${mod.preview || 'assets/placeholder.png'}" alt="${mod.name}" title="Click to enlarge">`;
+        }
+        
         // Create mod showcase HTML
         showcase.innerHTML = `
             <div class="mod-preview">
-                <img src="${mod.preview || 'assets/placeholder.png'}" 
-                     alt="${mod.name}" 
-                     title="Click to enlarge">
+                ${previewHtml}
             </div>
             <div class="mod-info">
                 <h3>${mod.name}</h3>
@@ -272,11 +484,13 @@ function showNextMod() {
         currentModIndex++;
         updateNavigation();
         
-        // Add click handler for preview image
+        // Add click handler for preview image (only if img element exists, not iframe)
         const previewImg = showcase.querySelector('.mod-preview img');
-        previewImg.addEventListener('click', () => {
-            // Could implement image preview modal here
-        });
+        if (previewImg) {
+            previewImg.addEventListener('click', () => {
+                // Could implement image preview modal here
+            });
+        }
         
         // Add click handler for GameBanana link
         const gameBananaLinkEl = showcase.querySelector('.mod-link');
@@ -371,8 +585,27 @@ async function startInstallation() {
         const result = await window.api.installMods({
             gamePath: gamePath,
             selectedMods: selectedMods,
-            openModloader: openModloader
+            openModloader: openModloader,
+            gameId: currentGameId
         });
+        
+        // Update completion message
+        if (currentGameConfig) {
+            const completeMessage = document.getElementById('install-complete-message');
+            const completeSuccessMessage = document.getElementById('complete-success-message');
+            const modManagerLabel = document.getElementById('open-modloader-label');
+            if (completeMessage) {
+                const modManagerName = currentGameId === 'sa2' ? 'SA2 Mod Manager' : 'Mod Manager';
+                completeMessage.textContent = `You can now launch ${currentGameConfig.name} with the ${modManagerName}.`;
+            }
+            if (completeSuccessMessage) {
+                completeSuccessMessage.textContent = `${currentGameConfig.name} mods have been installed successfully.`;
+            }
+            if (modManagerLabel && currentGameConfig.modManagerUrl) {
+                const modManagerName = currentGameId === 'sa2' ? 'SA2 Mod Manager' : 'Mod Manager';
+                modManagerLabel.textContent = `Open ${modManagerName} after installation`;
+            }
+        }
         
         if (result.success) {
             progressFill.style.width = '100%';
@@ -399,6 +632,6 @@ async function startInstallation() {
     window.api.removeAllListeners('install-progress');
 }
 
-// Initialize first step
+// Initialize first step (launcher)
 showStep(0);
 

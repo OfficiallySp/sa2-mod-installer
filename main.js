@@ -63,117 +63,199 @@ const logger = {
   }
 };
 
-// Configuration
-const CONFIG = {
-  gameExecutables: ['sonic2app.exe', 'Sonic Adventure 2.exe'],
-  modManagerUrl: 'https://github.com/X-Hax/SA-Mod-Manager/releases/latest',
-  defaultModsPath: 'mods',
-  steamAppId: 213610,
-  registryPaths: [
-    'HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall',
-    'HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall'
-  ]
+// Multi-Game Configuration System
+const GAMES_CONFIG = {
+  sa2: {
+    id: 'sa2',
+    name: 'Sonic Adventure 2',
+    steamAppId: 213610,
+    executables: ['sonic2app.exe', 'Sonic Adventure 2.exe'],
+    steamFolderName: 'Sonic Adventure 2',
+    modManagerUrl: 'https://github.com/X-Hax/SA-Mod-Manager/releases/latest',
+    defaultModsPath: 'mods',
+    welcomeVideoUrl: 'https://www.youtube.com/embed/4hvMyxoLN2s',
+    icon: 'assets/game-icons/sa2.png',
+    mods: [
+      {
+        id: 'sa2_mod_loader',
+        name: 'SA2 Mod Loader',
+        description: 'Essential mod loader for Sonic Adventure 2 and SADX. Required for all other mods.',
+        required: true,
+        gameBananaId: null,
+        downloadUrl: 'https://github.com/X-Hax/SA-Mod-Manager/releases/latest',
+        preview: 'assets/previews/modloader.png',
+        author: 'X-Hax'
+      },
+      {
+        id: 'sasdl',
+        name: 'SASDL',
+        description: 'Common prerequisite for input based mods.',
+        required: true,
+        gameBananaId: 615843,
+        preview: 'assets/previews/sasdl.png',
+        author: 'Shaddatic'
+      },
+      {
+        id: 'render',
+        name: 'Render Fix',
+        description: 'Fixes various rendering issues from the PC/GC versions.',
+        required: false,
+        gameBananaId: 452445,
+        preview: 'assets/previews/renderfix.gif',
+        author: 'Shaddatic'
+      },
+      {
+        id: 'cutscene',
+        name: 'Cutscene Revamp',
+        description: 'Replaces most cutscenes with better quality ones that match the original game while fixing other issues. <strong>See a sample:</strong> <a href="assets/cutsceneicat/index.html" target="_blank" style="color:#fff;background:#0078d7;padding:2px 8px;border-radius:3px;text-decoration:none;font-weight:bold;">Click to open preview</a>.',
+        required: false,
+        gameBananaId: 48872,
+        preview: 'assets/previews/cutscene.gif',
+        author: 'SPEEPSHighway & End User'
+      },
+      {
+        id: 'hdgui',
+        name: 'HD GUI',
+        description: 'Replaces the GUI with a high resolution one.',
+        required: false,
+        gameBananaId: 33171,
+        preview: 'assets/previews/hdgui.gif',
+        author: 'SPEEPSHighway'
+      },
+      {
+        id: 'enhancedchaoworld',
+        name: 'Chao World Extended',
+        description: 'Improves the Chao World with new features and content.',
+        required: false,
+        gameBananaId: 48840,
+        preview: 'assets/previews/chaoext.gif',
+        author: 'DarkyBenji & CWE Team'
+      },
+      {
+        id: 'chaoworldextended',
+        name: 'Enhanced Chao World',
+        description: 'Enhances the Chao World with more features and content. (compatible with Chao World Extended)',
+        required: false,
+        gameBananaId: 48915,
+        preview: 'assets/previews/ehchao.gif',
+        author: 'Shaddatic'
+      },
+      {
+        id: 'character',
+        name: 'Character Select Plus',
+        description: 'Play as any character in any stage.',
+        required: false,
+        gameBananaId: 33170,
+        preview: 'assets/previews/character.gif',
+        author: 'Justin113D, MainMemory & SORA'
+      },
+      {
+        id: 'volume',
+        name: 'Volume Control',
+        description: 'Adjusts the volume mixing of the game.',
+        required: false,
+        gameBananaId: 381193,
+        preview: 'assets/previews/volume.png',
+        author: 'Shaddatic'
+      },
+      {
+        id: 'input',
+        name: 'Input Fix',
+        description: 'Fixes the input system of the game. adds support for many more controllers.',
+        required: false,
+        gameBananaId: 515637,
+        preview: 'assets/previews/input.gif',
+        author: 'Shaddatic'
+      }
+    ]
+  },
+  heroes: {
+    id: 'heroes',
+    name: 'Sonic Heroes',
+    steamAppId: null, // To be configured
+    executables: ['Sonic Heroes.exe'],
+    steamFolderName: 'Sonic Heroes',
+    modManagerUrl: null,
+    defaultModsPath: 'mods',
+    welcomeVideoUrl: 'https://www.youtube.com/embed/hL_GSHFhzLQ',
+    icon: 'assets/game-icons/heroes.png',
+    mods: []
+  },
+  riders: {
+    id: 'riders',
+    name: 'Sonic Riders',
+    steamAppId: null,
+    executables: ['Sonic Riders.exe'],
+    steamFolderName: 'Sonic Riders',
+    modManagerUrl: null,
+    defaultModsPath: 'mods',
+    welcomeVideoUrl: 'https://www.youtube.com/embed/3nH5SU6cfJ0',
+    icon: 'assets/game-icons/riders.png',
+    mods: []
+  },
+  unleashed: {
+    id: 'unleashed',
+    name: 'Sonic Unleashed',
+    steamAppId: null,
+    executables: ['Sonic Unleashed.exe'],
+    steamFolderName: 'Sonic Unleashed',
+    modManagerUrl: null,
+    defaultModsPath: 'mods',
+    welcomeVideoUrl: 'https://www.youtube.com/embed/1AFH1K3oTDk',
+    icon: 'assets/game-icons/unleashed.png',
+    mods: []
+  },
+  unleashed_legacy: {
+    id: 'unleashed_legacy',
+    name: 'Sonic Unleashed (Legacy)',
+    steamAppId: null,
+    executables: ['Sonic Unleashed.exe'],
+    steamFolderName: 'Sonic Unleashed',
+    modManagerUrl: null,
+    defaultModsPath: 'mods',
+    welcomeVideoUrl: 'https://www.youtube.com/embed/NcMMVbj7BrY',
+    icon: 'assets/game-icons/unleashed-legacy.png',
+    mods: []
+  },
+  forces: {
+    id: 'forces',
+    name: 'Sonic Forces',
+    steamAppId: null,
+    executables: ['Sonic Forces.exe'],
+    steamFolderName: 'Sonic Forces',
+    modManagerUrl: null,
+    defaultModsPath: 'mods',
+    welcomeVideoUrl: 'https://www.youtube.com/embed/MnPCLUsyErA',
+    icon: 'assets/game-icons/forces.png',
+    mods: []
+  },
+  frontiers: {
+    id: 'frontiers',
+    name: 'Sonic Frontiers',
+    steamAppId: null,
+    executables: ['Sonic Frontiers.exe'],
+    steamFolderName: 'Sonic Frontiers',
+    modManagerUrl: null,
+    defaultModsPath: 'mods',
+    welcomeVideoUrl: 'https://www.youtube.com/embed/LJ1cK07Am-M',
+    icon: 'assets/game-icons/frontiers.png',
+    mods: []
+  }
 };
 
-// Mod list with GameBanana IDs (to be configured)
-const MODS_LIST = [
-  {
-    id: 'sa2_mod_loader',
-    name: 'SA2 Mod Loader',
-    description: 'Essential mod loader for Sonic Adventure 2 and SADX. Required for all other mods.',
-    required: true,
-    gameBananaId: null, // Not from GameBanana - handled separately
-    downloadUrl: 'https://github.com/X-Hax/SA-Mod-Manager/releases/latest', // Official source
-    preview: 'assets/previews/modloader.png',
-    author: 'X-Hax'
-  },
-  {
-    id: 'sasdl',
-    name: 'SASDL',
-    description: 'Common prerequisite for input based mods.',
-    required: true,
-    gameBananaId: 615843,
-    preview: 'assets/previews/sasdl.png',
-    author: 'Shaddatic'
-  },
-  {
-    id: 'render',
-    name: 'Render Fix',
-    description: 'Fixes various rendering issues from the PC/GC versions.',
-    required: false,
-    gameBananaId: 452445,
-    preview: 'assets/previews/renderfix.gif',
-    author: 'Shaddatic'
-  },
-  {
-    id: 'cutscene',
-    name: 'Cutscene Revamp',
-    description: 'Replaces most cutscenes with better quality ones that match the original game while fixing other issues. <strong>See a sample:</strong> <a href="assets/cutsceneicat/index.html" target="_blank" style="color:#fff;background:#0078d7;padding:2px 8px;border-radius:3px;text-decoration:none;font-weight:bold;">Click to open preview</a>.',
-    required: false,
-    gameBananaId: 48872,
-    preview: 'assets/previews/cutscene.gif',
-    author: 'SPEEPSHighway & End User'
-  },
-  {
-    id: 'hdgui',
-    name: 'HD GUI',
-    description: 'Replaces the GUI with a high resolution one.',
-    required: false,
-    gameBananaId: 33171,
-    preview: 'assets/previews/hdgui.gif',
-    author: 'SPEEPSHighway'
-  },
-  {
-    id: 'enhancedchaoworld',
-    name: 'Chao World Extended',
-    description: 'Improves the Chao World with new features and content.',
-    required: false,
-    gameBananaId: 48840,
-    preview: 'assets/previews/chaoext.gif',
-    author: 'DarkyBenji & CWE Team'
-  },
-  {
-    id: 'chaoworldextended',
-    name: 'Enhanced Chao World',
-    description: 'Enhances the Chao World with more features and content. (compatible with Chao World Extended)',
-    required: false,
-    gameBananaId: 48915,
-    preview: 'assets/previews/ehchao.gif',
-    author: 'Shaddatic'
-  },
-  {
-    id: 'character',
-    name: 'Character Select Plus',
-    description: 'Play as any character in any stage.',
-    required: false,
-    gameBananaId: 33170,
-    preview: 'assets/previews/character.gif',
-    author: 'Justin113D, MainMemory & SORA'
-  },
-  {
-    id: 'volume',
-    name: 'Volume Control',
-    description: 'Adjusts the volume mixing of the game.',
-    required: false,
-    gameBananaId: 381193,
-    preview: 'assets/previews/volume.png',
-    author: 'Shaddatic'
-  },
-  {
-    id: 'input',
-    name: 'Input Fix',
-    description: 'Fixes the input system of the game. adds support for many more controllers.',
-    required: false,
-    gameBananaId: 515637,
-    preview: 'assets/previews/input.gif',
-    author: 'Shaddatic'
-  },
+// Registry paths (shared across games)
+const REGISTRY_PATHS = [
+  'HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall',
+  'HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall'
 ];
+
+// Current selected game (set by launcher)
+let currentGameId = null;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 680,
-    height: 680,
+    width: 900,
+    height: 700,
     resizable: false,
     webPreferences: {
       nodeIntegration: false,
@@ -213,17 +295,54 @@ app.on('window-all-closed', () => {
 
 // IPC Handlers
 
-// Detect SA2 installation
-ipcMain.handle('detect-game', async () => {
+// Get list of available games
+ipcMain.handle('get-games-list', async () => {
+  return Object.values(GAMES_CONFIG).map(game => ({
+    id: game.id,
+    name: game.name,
+    icon: game.icon,
+    welcomeVideoUrl: game.welcomeVideoUrl
+  }));
+});
+
+// Set current game selection
+ipcMain.handle('set-current-game', async (event, gameId) => {
+  if (GAMES_CONFIG[gameId]) {
+    currentGameId = gameId;
+    return { success: true };
+  }
+  return { success: false, error: 'Invalid game ID' };
+});
+
+// Get current game config
+ipcMain.handle('get-current-game', async () => {
+  if (!currentGameId || !GAMES_CONFIG[currentGameId]) {
+    return null;
+  }
+  return GAMES_CONFIG[currentGameId];
+});
+
+// Detect game installation
+ipcMain.handle('detect-game', async (event, gameId) => {
+  if (!gameId) {
+    gameId = currentGameId;
+  }
+  
+  if (!gameId || !GAMES_CONFIG[gameId]) {
+    return { found: false, path: null, method: null, error: 'Invalid game ID' };
+  }
+
+  const gameConfig = GAMES_CONFIG[gameId];
+  
   try {
     // Check Steam installation
-    const steamPath = await findSteamGame();
+    const steamPath = await findSteamGame(gameConfig);
     if (steamPath) {
       return { found: true, path: steamPath, method: 'steam' };
     }
 
     // Check registry for other installations
-    const registryPath = await findGameInRegistry();
+    const registryPath = await findGameInRegistry(gameConfig);
     if (registryPath) {
       return { found: true, path: registryPath, method: 'registry' };
     }
@@ -237,39 +356,66 @@ ipcMain.handle('detect-game', async () => {
 });
 
 // Browse for game folder
-ipcMain.handle('browse-game-folder', async () => {
+ipcMain.handle('browse-game-folder', async (event, gameId) => {
+  if (!gameId) {
+    gameId = currentGameId;
+  }
+  
+  if (!gameId || !GAMES_CONFIG[gameId]) {
+    return { found: false, error: 'Invalid game ID' };
+  }
+
+  const gameConfig = GAMES_CONFIG[gameId];
+  
   const result = await dialog.showOpenDialog(mainWindow, {
     properties: ['openDirectory'],
-    title: 'Select Sonic Adventure 2 Installation Folder'
+    title: `Select ${gameConfig.name} Installation Folder`
   });
 
   if (!result.canceled && result.filePaths.length > 0) {
     const gamePath = result.filePaths[0];
-    const isValid = await validateGamePath(gamePath);
+    const isValid = await validateGamePath(gamePath, gameConfig);
     if (isValid) {
       return { found: true, path: gamePath };
     } else {
-      return { found: false, error: 'Invalid game folder. Could not find game executable.' };
+      return { found: false, error: `Invalid game folder. Could not find ${gameConfig.name} executable.` };
     }
   }
   return { found: false };
 });
 
 // Validate game installation path
-ipcMain.handle('validate-game-path', async (event, gamePath) => {
+ipcMain.handle('validate-game-path', async (event, gamePath, gameId) => {
   if (!gamePath || typeof gamePath !== 'string') {
     return false;
   }
-  return await validateGamePath(gamePath);
+  
+  if (!gameId) {
+    gameId = currentGameId;
+  }
+  
+  if (!gameId || !GAMES_CONFIG[gameId]) {
+    return false;
+  }
+  
+  return await validateGamePath(gamePath, GAMES_CONFIG[gameId]);
 });
 
-// Get mods list
-ipcMain.handle('get-mods-list', async () => {
-  return MODS_LIST;
+// Get mods list for current game
+ipcMain.handle('get-mods-list', async (event, gameId) => {
+  if (!gameId) {
+    gameId = currentGameId;
+  }
+  
+  if (!gameId || !GAMES_CONFIG[gameId]) {
+    return [];
+  }
+  
+  return GAMES_CONFIG[gameId].mods || [];
 });
 
 // Download and install mods
-ipcMain.handle('install-mods', async (event, { gamePath, selectedMods, openModloader }) => {
+ipcMain.handle('install-mods', async (event, { gamePath, selectedMods, openModloader, gameId }) => {
   try {
     // Input validation
     if (!gamePath || typeof gamePath !== 'string') {
@@ -278,30 +424,43 @@ ipcMain.handle('install-mods', async (event, { gamePath, selectedMods, openModlo
     if (!Array.isArray(selectedMods)) {
       throw new Error('Invalid mods selection provided');
     }
-    if (!await validateGamePath(gamePath)) {
+    
+    if (!gameId) {
+      gameId = currentGameId;
+    }
+    
+    if (!gameId || !GAMES_CONFIG[gameId]) {
+      throw new Error('Invalid game ID');
+    }
+    
+    const gameConfig = GAMES_CONFIG[gameId];
+    
+    if (!await validateGamePath(gamePath, gameConfig)) {
       throw new Error('Invalid game installation path');
     }
     
-    const modsPath = path.join(gamePath, CONFIG.defaultModsPath);
+    const modsPath = path.join(gamePath, gameConfig.defaultModsPath);
     
     // Create mods directory if it doesn't exist
     await fs.mkdir(modsPath, { recursive: true });
 
-    // Download and install mod manager first
-    event.sender.send('install-progress', { 
-      status: 'downloading', 
-      message: 'Downloading SA2 Mod Manager...', 
-      progress: 0 
-    });
-    
-    await downloadModManager(gamePath);
+    // Download and install mod manager first (if configured)
+    if (gameConfig.modManagerUrl) {
+      event.sender.send('install-progress', { 
+        status: 'downloading', 
+        message: `Downloading ${gameConfig.name} Mod Manager...`, 
+        progress: 0 
+      });
+      
+      await downloadModManager(gamePath, gameConfig);
+    }
 
     // Download and install selected mods
     let completed = 0;
     const total = selectedMods.length;
 
     for (const modId of selectedMods) {
-      const mod = MODS_LIST.find(m => m.id === modId);
+      const mod = gameConfig.mods.find(m => m.id === modId);
       if (!mod) continue;
 
       event.sender.send('install-progress', { 
@@ -310,11 +469,14 @@ ipcMain.handle('install-mods', async (event, { gamePath, selectedMods, openModlo
         progress: Math.round((completed / total) * 100) 
       });
 
-      if (mod.id === 'sa2_mod_loader') {
+      if (mod.id === 'sa2_mod_loader' && gameId === 'sa2') {
         // Mod loader is installed with the mod manager, skip separate download
         console.log(`Skipping separate download for ${mod.name} - included with mod manager`);
       } else if (mod.gameBananaId) {
         await downloadModFromGameBanana(mod, modsPath);
+      } else if (mod.downloadUrl) {
+        // Handle direct download URLs
+        console.log(`Direct download URL configured for ${mod.name}, but not implemented yet`);
       } else {
         console.log(`No download method configured for ${mod.name}, skipping`);
       }
@@ -327,27 +489,30 @@ ipcMain.handle('install-mods', async (event, { gamePath, selectedMods, openModlo
       });
     }
 
-    // Configure mods
-    event.sender.send('install-progress', { 
-      status: 'configuring', 
-      message: 'Configuring mods...', 
-      progress: 100 
-    });
+    // Configure mods (if mod manager is used)
+    if (gameConfig.modManagerUrl) {
+      event.sender.send('install-progress', { 
+        status: 'configuring', 
+        message: 'Configuring mods...', 
+        progress: 100 
+      });
 
-    await configureModsIni(gamePath, selectedMods);
+      await configureModsIni(gamePath, selectedMods, gameConfig);
 
-    // Open mod manager if requested
-    if (openModloader) {
-      const modManagerPath = path.join(gamePath, 'SA2ModManager.exe');
-      try {
-        // Check if the file exists
-        await fs.access(modManagerPath);
-        // Open the mod manager
-        shell.openPath(modManagerPath);
-        console.log('Opened SA2 Mod Manager');
-      } catch (error) {
-        console.error('Failed to open mod manager:', error);
-        // Don't fail the installation if we can't open the mod manager
+      // Open mod manager if requested
+      if (openModloader && gameConfig.modManagerUrl) {
+        const modManagerExe = gameId === 'sa2' ? 'SA2ModManager.exe' : 'ModManager.exe';
+        const modManagerPath = path.join(gamePath, modManagerExe);
+        try {
+          // Check if the file exists
+          await fs.access(modManagerPath);
+          // Open the mod manager
+          shell.openPath(modManagerPath);
+          console.log(`Opened ${gameConfig.name} Mod Manager`);
+        } catch (error) {
+          console.error('Failed to open mod manager:', error);
+          // Don't fail the installation if we can't open the mod manager
+        }
       }
     }
 
@@ -360,18 +525,22 @@ ipcMain.handle('install-mods', async (event, { gamePath, selectedMods, openModlo
 
 // Helper Functions
 
-async function findSteamGame() {
+async function findSteamGame(gameConfig) {
+  if (!gameConfig || !gameConfig.steamFolderName) {
+    return null;
+  }
+  
   try {
     // Common Steam installation paths
     const steamPaths = [
-      'C:\\Program Files (x86)\\Steam\\steamapps\\common\\Sonic Adventure 2',
-      'C:\\Program Files\\Steam\\steamapps\\common\\Sonic Adventure 2',
-      'D:\\Steam\\steamapps\\common\\Sonic Adventure 2',
-      'D:\\SteamLibrary\\steamapps\\common\\Sonic Adventure 2'
+      `C:\\Program Files (x86)\\Steam\\steamapps\\common\\${gameConfig.steamFolderName}`,
+      `C:\\Program Files\\Steam\\steamapps\\common\\${gameConfig.steamFolderName}`,
+      `D:\\Steam\\steamapps\\common\\${gameConfig.steamFolderName}`,
+      `D:\\SteamLibrary\\steamapps\\common\\${gameConfig.steamFolderName}`
     ];
 
     for (const steamPath of steamPaths) {
-      if (await validateGamePath(steamPath)) {
+      if (await validateGamePath(steamPath, gameConfig)) {
         return steamPath;
       }
     }
@@ -382,8 +551,8 @@ async function findSteamGame() {
       const match = stdout.match(/SteamPath\s+REG_SZ\s+(.+)/);
       if (match) {
         const steamPath = match[1].trim().replace(/\//g, '\\');
-        const gamePath = path.join(steamPath, 'steamapps', 'common', 'Sonic Adventure 2');
-        if (await validateGamePath(gamePath)) {
+        const gamePath = path.join(steamPath, 'steamapps', 'common', gameConfig.steamFolderName);
+        if (await validateGamePath(gamePath, gameConfig)) {
           return gamePath;
         }
       }
@@ -396,29 +565,33 @@ async function findSteamGame() {
   return null;
 }
 
-async function findGameInRegistry() {
-  // Search Windows registry for SA2 installation using Windows commands
+async function findGameInRegistry(gameConfig) {
+  if (!gameConfig || !gameConfig.name) {
+    return null;
+  }
+  
+  // Search Windows registry for game installation using Windows commands
   try {
-    const registryPaths = [
-      'HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall',
-      'HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall'
-    ];
-
-    for (const regPath of registryPaths) {
+    const gameNameLower = gameConfig.name.toLowerCase();
+    const searchTerms = gameNameLower.split(' ').filter(term => term.length > 2);
+    
+    for (const regPath of REGISTRY_PATHS) {
       try {
         // Get all uninstall entries
         const { stdout } = await execAsync(`reg query "${regPath}" 2>nul`);
         const subKeys = stdout.match(/HKEY_LOCAL_MACHINE\\[^\r\n]+/g) || [];
         
         for (const subKey of subKeys) {
-          if (subKey.toLowerCase().includes('sonic') && subKey.toLowerCase().includes('adventure')) {
+          const subKeyLower = subKey.toLowerCase();
+          // Check if registry key contains game name terms
+          if (searchTerms.some(term => subKeyLower.includes(term))) {
             try {
               // Query the specific key for InstallLocation
               const { stdout: valueStdout } = await execAsync(`reg query "${subKey}" /v InstallLocation 2>nul`);
               const match = valueStdout.match(/InstallLocation\s+REG_SZ\s+(.+)/);
               if (match) {
                 const gamePath = match[1].trim();
-                if (await validateGamePath(gamePath)) {
+                if (await validateGamePath(gamePath, gameConfig)) {
                   return gamePath;
                 }
               }
@@ -437,23 +610,34 @@ async function findGameInRegistry() {
   return null;
 }
 
-async function validateGamePath(gamePath) {
-  if (!gamePath) return false;
+async function validateGamePath(gamePath, gameConfig) {
+  if (!gamePath || !gameConfig) return false;
   
   try {
     const files = await fs.readdir(gamePath);
-    return CONFIG.gameExecutables.some(exe => files.includes(exe));
+    return gameConfig.executables.some(exe => files.includes(exe));
   } catch (error) {
     return false;
   }
 }
 
-async function downloadModManager(gamePath) {
-  console.log('Downloading SA2 Mod Manager from GitHub...');
+async function downloadModManager(gamePath, gameConfig) {
+  if (!gameConfig || !gameConfig.modManagerUrl) {
+    console.log('No mod manager URL configured for this game');
+    return;
+  }
+  
+  console.log(`Downloading ${gameConfig.name} Mod Manager...`);
   
   try {
-    // Get latest release from GitHub API
-    const repoUrl = 'https://api.github.com/repos/X-Hax/SA-Mod-Manager/releases/latest';
+    // Extract GitHub repo from URL (assuming GitHub releases)
+    const urlMatch = gameConfig.modManagerUrl.match(/github\.com\/([^\/]+)\/([^\/]+)/);
+    if (!urlMatch) {
+      throw new Error('Invalid mod manager URL format');
+    }
+    
+    const [, owner, repo] = urlMatch;
+    const repoUrl = `https://api.github.com/repos/${owner}/${repo}/releases/latest`;
     const releaseResponse = await axios.get(repoUrl, {
       headers: {
         'User-Agent': 'SA2ModInstaller/1.0',
@@ -463,7 +647,7 @@ async function downloadModManager(gamePath) {
     });
 
     const release = releaseResponse.data;
-    console.log(`Found SA Mod Manager ${release.tag_name}`);
+    console.log(`Found ${gameConfig.name} Mod Manager ${release.tag_name}`);
     
     // Find the Windows executable in assets
     const windowsAsset = release.assets.find(asset => 
@@ -482,7 +666,7 @@ async function downloadModManager(gamePath) {
     const downloadResponse = await axios.get(windowsAsset.browser_download_url, {
       responseType: 'arraybuffer',
       headers: {
-        'User-Agent': 'SA2ModInstaller/1.0'
+        'User-Agent': 'TheDefinitizer/1.0'
       },
       timeout: 300000, // 5 minutes for large download
       onDownloadProgress: (progressEvent) => {
@@ -495,16 +679,17 @@ async function downloadModManager(gamePath) {
 
     // Handle different file types
     const fileName = windowsAsset.name.toLowerCase();
+    const modManagerExe = gameConfig.id === 'sa2' ? 'SA2ModManager.exe' : 'ModManager.exe';
     
     if (fileName.endsWith('.exe')) {
       // Direct executable
-      const modManagerPath = path.join(gamePath, 'SA2ModManager.exe');
+      const modManagerPath = path.join(gamePath, modManagerExe);
       await fs.writeFile(modManagerPath, downloadResponse.data);
-      console.log('SA2 Mod Manager executable installed');
+      console.log(`${gameConfig.name} Mod Manager executable installed`);
       
     } else if (fileName.endsWith('.zip')) {
       // ZIP archive - extract it
-      console.log('Extracting SA2 Mod Manager from ZIP...');
+      console.log(`Extracting ${gameConfig.name} Mod Manager from ZIP...`);
       
       const tempZipPath = path.join(gamePath, 'temp_modmanager.zip');
       await fs.writeFile(tempZipPath, downloadResponse.data);
@@ -515,9 +700,9 @@ async function downloadModManager(gamePath) {
       // Find the main executable
       const exeEntry = entries.find(entry => entry.entryName.toLowerCase().endsWith('.exe'));
       if (exeEntry) {
-        const modManagerPath = path.join(gamePath, 'SA2ModManager.exe');
+        const modManagerPath = path.join(gamePath, modManagerExe);
         await fs.writeFile(modManagerPath, exeEntry.getData());
-        console.log(`Extracted ${exeEntry.entryName} as SA2ModManager.exe`);
+        console.log(`Extracted ${exeEntry.entryName} as ${modManagerExe}`);
       }
       
       // Extract other important files (DLLs, etc.)
@@ -544,7 +729,7 @@ async function downloadModManager(gamePath) {
     try {
       await fs.access(modsIni);
     } catch {
-      await fs.writeFile(modsIni, `; SA2 Mods Configuration
+      await fs.writeFile(modsIni, `; ${gameConfig.name} Mods Configuration
 [Main]
 EnabledMods=
 UpdateCheck=1
@@ -555,7 +740,7 @@ Theme=Dark
       console.log('Created mods.ini configuration file');
     }
     
-    console.log('SA2 Mod Manager installation completed successfully');
+    console.log(`${gameConfig.name} Mod Manager installation completed successfully`);
     
   } catch (error) {
     console.error('Error downloading SA2 Mod Manager:', error);
@@ -588,7 +773,7 @@ async function downloadModFromGameBanana(mod, modsPath) {
     // Get mod info with proper headers
     const modInfo = await axios.get(apiUrl, {
       headers: {
-        'User-Agent': 'SA2ModInstaller/1.0',
+        'User-Agent': 'TheDefinitizer/1.0',
         'Accept': 'application/json',
       },
       timeout: 30000
@@ -607,7 +792,7 @@ async function downloadModFromGameBanana(mod, modsPath) {
       const response = await axios.get(downloadUrl, { 
         responseType: 'arraybuffer',
         headers: {
-          'User-Agent': 'SA2ModInstaller/1.0',
+          'User-Agent': 'TheDefinitizer/1.0',
           'Accept': 'application/octet-stream, application/zip, */*',
         },
         maxRedirects: 5,
@@ -736,7 +921,11 @@ async function downloadModFromGameBanana(mod, modsPath) {
   }
 }
 
-async function configureModsIni(gamePath, selectedMods) {
+async function configureModsIni(gamePath, selectedMods, gameConfig) {
+  if (!gameConfig) {
+    return;
+  }
+  
   // Create or update the mods configuration file
   const configPath = path.join(gamePath, 'mods.ini');
   
@@ -783,7 +972,7 @@ async function configureModsIni(gamePath, selectedMods) {
   
   // Add enabled mods
   const enabledMods = selectedMods.map(modId => {
-    const mod = MODS_LIST.find(m => m.id === modId);
+    const mod = gameConfig.mods.find(m => m.id === modId);
     return mod ? mod.id : null;
   }).filter(Boolean);
   
@@ -791,7 +980,7 @@ async function configureModsIni(gamePath, selectedMods) {
   
   // Add mod entries (update existing or add new)
   for (const modId of selectedMods) {
-    const mod = MODS_LIST.find(m => m.id === modId);
+    const mod = gameConfig.mods.find(m => m.id === modId);
     if (mod) {
       config += `[${mod.id}]\n`;
       config += `Name=${mod.name}\n`;
@@ -834,7 +1023,7 @@ ipcMain.handle('test-api', async (event, modId) => {
     const apiUrl = `https://gamebanana.com/apiv8/Mod/${modId}?_csvProperties=_aFiles,_sName,_idRow`;
     const response = await axios.get(apiUrl, {
       headers: {
-        'User-Agent': 'SA2ModInstaller/1.0',
+        'User-Agent': 'TheDefinitizer/1.0',
         'Accept': 'application/json',
       },
       timeout: 10000
