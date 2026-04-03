@@ -12,9 +12,9 @@
   "author": "SA2 Mod Installer Team",
   "license": "MIT",
   "devDependencies": {
-    "@electron/rebuild": "^3.6.0",
+    "@electron/rebuild": "^4.0.3",
     "electron": "^35.7.5",
-    "electron-builder": "^24.9.1"
+    "electron-builder": "^26.6.0"
   },
   "dependencies": {
     "7zip-bin": "^5.2.0",
