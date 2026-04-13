@@ -13,13 +13,13 @@
   "license": "MIT",
   "devDependencies": {
     "@electron/rebuild": "^4.0.3",
-    "electron": "^39.8.4",
+    "electron": "^39.8.5",
     "electron-builder": "^26.6.0"
   },
   "dependencies": {
     "7zip-bin": "^5.2.0",
     "adm-zip": "^0.5.10",
-    "axios": "^1.13.5",
+    "axios": "^1.15.0",
     "electron-store": "^8.1.0",
     "node-stream-zip": "^1.15.0"
   },
