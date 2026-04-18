@@ -172,14 +172,74 @@ const GAMES_CONFIG = {
   heroes: {
     id: 'heroes',
     name: 'Sonic Heroes',
-    steamAppId: null, // To be configured
-    executables: ['Sonic Heroes.exe'],
+    steamAppId: null,
+    executables: ['Tsonic_win.exe', 'Sonic Heroes.exe'],
     steamFolderName: 'Sonic Heroes',
+    requiredFolderMarkers: ['dvdroot'],
+    folderBrowseHint: 'Choose the folder that contains Tsonic_win.exe (or Sonic Heroes.exe) and a dvdroot folder—typical Sonic PC Collection layout.',
     modManagerUrl: null,
     defaultModsPath: 'mods',
-    welcomeVideoUrl: 'https://www.youtube.com/embed/hL_GSHFhzLQ',
+    welcomeVideoUrl: 'https://youtu.be/hL_GSHFhzLQ',
     icon: 'assets/game-icons/heroes.png',
-    mods: []
+    mods: [
+      {
+        id: 'heroes_fixed_edition',
+        name: 'Sonic Heroes: Fixed Edition',
+        description: 'PCGamingWiki-recommended GameBanana bundle (replaces many manual EXE / hex steps). Extracts into your game directory. If you also use Graphics Essentials, avoid duplicate widescreen or D3D hooks—read each readme.',
+        required: true,
+        gameBananaId: 620838,
+        installTarget: 'gameRoot',
+        preview: 'assets/placeholder.png',
+        author: 'SH Mods Community'
+      },
+      {
+        id: 'reloaded_ii',
+        name: 'Reloaded II (next to game)',
+        description: 'Current mod loader for Heroes. Installed under Reloaded-II inside your game folder. Run Reloaded-II.exe, register Sonic Heroes, then enable mods from the Reloaded UI.',
+        required: false,
+        githubRelease: { owner: 'Reloaded-Project', repo: 'Reloaded-II', assetName: 'Release.zip' },
+        installTarget: 'reloadedPortable',
+        preview: 'assets/placeholder.png',
+        author: 'Reloaded-Project'
+      },
+      {
+        id: 'heroes_graphics_essentials',
+        name: 'Heroes Graphics Essentials (Reloaded II)',
+        description: 'Widescreen/tallscreen, borderless or resizable window, faster stage loads, 2P framerate unlock, ultra-wide crash fixes. Extracts to %AppData%\\Reloaded-II\\Mods. Do not combine with other widescreen ASI fixes unless the readme says it is safe.',
+        required: false,
+        githubRelease: {
+          owner: 'Sewer56',
+          repo: 'Heroes.Graphics.Essentials.ReloadedII',
+          assetNameIncludes: ['Heroes.Graphics.Essentials'],
+          assetNameEndsWith: '.7z'
+        },
+        installTarget: 'reloadedMods',
+        preview: 'assets/placeholder.png',
+        author: 'Sewer56'
+      },
+      {
+        id: 'heroes_controller_base',
+        name: 'Heroes Controller Hook — base (Reloaded II)',
+        description: 'Base Reloaded package for XInput/DInput and camera triggers. Installs into %AppData%\\Reloaded-II\\Mods. Add Custom below if you need remapping.',
+        required: false,
+        gameBananaId: 50825,
+        gameBananaFileIncludes: 'heroes_controller_hook2_2_1',
+        installTarget: 'reloadedMods',
+        preview: 'assets/placeholder.png',
+        author: 'Sewer56'
+      },
+      {
+        id: 'heroes_controller_custom',
+        name: 'Heroes Controller Hook — custom / remapping',
+        description: 'Optional Reloaded add-on for rebinding and advanced input. Use with the base Controller Hook package.',
+        required: false,
+        gameBananaId: 50825,
+        gameBananaFileIncludes: 'heroes_controller_hook_custom3_0_0',
+        installTarget: 'reloadedMods',
+        preview: 'assets/placeholder.png',
+        author: 'Sewer56'
+      }
+    ]
   },
   riders: {
     id: 'riders',
@@ -434,11 +494,21 @@ ipcMain.handle('install-mods', async (event, { gamePath, selectedMods, openModlo
     }
     
     const gameConfig = GAMES_CONFIG[gameId];
-    
+
     if (!await validateGamePath(gamePath, gameConfig)) {
       throw new Error('Invalid game installation path');
     }
-    
+
+    let orderedModIds = [...selectedMods];
+    if (gameId === 'heroes') {
+      const order = ['heroes_fixed_edition', 'reloaded_ii', 'heroes_graphics_essentials', 'heroes_controller_base', 'heroes_controller_custom'];
+      orderedModIds.sort((a, b) => {
+        const ia = order.indexOf(a);
+        const ib = order.indexOf(b);
+        return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+      });
+    }
+
     const modsPath = path.join(gamePath, gameConfig.defaultModsPath);
     
     // Create mods directory if it doesn't exist
@@ -459,7 +529,7 @@ ipcMain.handle('install-mods', async (event, { gamePath, selectedMods, openModlo
     let completed = 0;
     const total = selectedMods.length;
 
-    for (const modId of selectedMods) {
+    for (const modId of orderedModIds) {
       const mod = gameConfig.mods.find(m => m.id === modId);
       if (!mod) continue;
 
@@ -472,10 +542,11 @@ ipcMain.handle('install-mods', async (event, { gamePath, selectedMods, openModlo
       if (mod.id === 'sa2_mod_loader' && gameId === 'sa2') {
         // Mod loader is installed with the mod manager, skip separate download
         console.log(`Skipping separate download for ${mod.name} - included with mod manager`);
+      } else if (mod.githubRelease) {
+        await downloadModFromGithubRelease(mod, gamePath);
       } else if (mod.gameBananaId) {
-        await downloadModFromGameBanana(mod, modsPath);
+        await downloadModFromGameBanana(mod, modsPath, gamePath);
       } else if (mod.downloadUrl) {
-        // Handle direct download URLs
         console.log(`Direct download URL configured for ${mod.name}, but not implemented yet`);
       } else {
         console.log(`No download method configured for ${mod.name}, skipping`);
@@ -612,12 +683,155 @@ async function findGameInRegistry(gameConfig) {
 
 async function validateGamePath(gamePath, gameConfig) {
   if (!gamePath || !gameConfig) return false;
-  
+
   try {
     const files = await fs.readdir(gamePath);
-    return gameConfig.executables.some(exe => files.includes(exe));
+    const hasExe = gameConfig.executables.some(exe => files.includes(exe));
+    if (!hasExe) return false;
+    if (gameConfig.requiredFolderMarkers?.length) {
+      for (const marker of gameConfig.requiredFolderMarkers) {
+        try {
+          await fs.access(path.join(gamePath, marker));
+        } catch {
+          return false;
+        }
+      }
+    }
+    return true;
   } catch (error) {
     return false;
+  }
+}
+
+function getReloadedModsDir() {
+  return path.join(process.env.APPDATA || '', 'Reloaded-II', 'Mods');
+}
+
+function pickGameBananaFile(files, mod) {
+  if (!files || !files.length) return null;
+  let list = files.filter((f) => f._sFile && f._bHasContents !== false);
+  list = list.filter((f) => !/releasemetadata\.json$/i.test(f._sFile));
+  if (mod.gameBananaFileIncludes) {
+    const inc = mod.gameBananaFileIncludes.toLowerCase();
+    const filtered = list.filter((f) => f._sFile.toLowerCase().includes(inc));
+    if (filtered.length) list = filtered;
+  }
+  const nonArchived = list.filter((f) => !f._bIsArchived);
+  if (nonArchived.length) list = nonArchived;
+  list.sort((a, b) => (b._tsDateAdded || 0) - (a._tsDateAdded || 0));
+  return list[0] || files[0];
+}
+
+async function promoteDirectoryContents(sourceDir, destDir) {
+  await fs.mkdir(destDir, { recursive: true });
+  const entries = await fs.readdir(sourceDir, { withFileTypes: true });
+  if (entries.length === 1 && entries[0].isDirectory()) {
+    const inner = path.join(sourceDir, entries[0].name);
+    const innerNames = await fs.readdir(inner);
+    for (const name of innerNames) {
+      await fs.cp(path.join(inner, name), path.join(destDir, name), { recursive: true, force: true });
+    }
+  } else {
+    for (const ent of entries) {
+      await fs.cp(path.join(sourceDir, ent.name), path.join(destDir, ent.name), { recursive: true, force: true });
+    }
+  }
+}
+
+async function extractZipBufferToDir(buffer, destDir) {
+  const zip = new AdmZip(buffer);
+  const tempDir = path.join(destDir, `_zip_temp_${Date.now()}`);
+  await fs.mkdir(tempDir, { recursive: true });
+  zip.extractAllTo(tempDir, true);
+  await promoteDirectoryContents(tempDir, destDir);
+  await fs.rm(tempDir, { recursive: true, force: true });
+}
+
+async function extract7zArchiveToDir(archivePath, destDir) {
+  const tempDir = path.join(path.dirname(archivePath), `_7z_temp_${Date.now()}`);
+  await fs.mkdir(tempDir, { recursive: true });
+  const sevenZipPath = get7zaPath();
+  await fs.access(sevenZipPath);
+  const sanitizedSeven = sevenZipPath.replace(/"/g, '');
+  const sanitizedArchive = archivePath.replace(/"/g, '');
+  const sanitizedTemp = tempDir.replace(/"/g, '');
+  await execAsync(`"${sanitizedSeven}" x "${sanitizedArchive}" -o"${sanitizedTemp}" -y`);
+  await promoteDirectoryContents(tempDir, destDir);
+  await fs.rm(tempDir, { recursive: true, force: true });
+}
+
+async function downloadGithubReleaseAsset(mod) {
+  const gr = mod.githubRelease;
+  if (!gr?.owner || !gr?.repo) {
+    throw new Error('Invalid githubRelease configuration');
+  }
+  const apiUrl = `https://api.github.com/repos/${gr.owner}/${gr.repo}/releases/latest`;
+  const releaseResponse = await axios.get(apiUrl, {
+    headers: {
+      'User-Agent': 'TheDefinitizer/1.0',
+      Accept: 'application/vnd.github.v3+json'
+    },
+    timeout: 30000
+  });
+  const assets = releaseResponse.data.assets || [];
+  let asset = null;
+  if (gr.assetName) {
+    asset = assets.find((a) => a.name === gr.assetName);
+  }
+  if (!asset && (gr.assetNameIncludes || gr.assetNameEndsWith)) {
+    const includes = Array.isArray(gr.assetNameIncludes)
+      ? gr.assetNameIncludes
+      : gr.assetNameIncludes
+        ? [gr.assetNameIncludes]
+        : [];
+    asset = assets.find((a) => {
+      const n = a.name || '';
+      const okInc = !includes.length || includes.every((s) => n.includes(s));
+      const okEnd = !gr.assetNameEndsWith || n.endsWith(gr.assetNameEndsWith);
+      return okInc && okEnd;
+    });
+  }
+  if (!asset) {
+    throw new Error(`No matching GitHub release asset for ${mod.name}`);
+  }
+  const downloadResponse = await axios.get(asset.browser_download_url, {
+    responseType: 'arraybuffer',
+    headers: { 'User-Agent': 'TheDefinitizer/1.0' },
+    timeout: 300000
+  });
+  return { buffer: Buffer.from(downloadResponse.data), fileName: asset.name };
+}
+
+async function downloadModFromGithubRelease(mod, gamePath) {
+  const { buffer, fileName } = await downloadGithubReleaseAsset(mod);
+  const lower = fileName.toLowerCase();
+
+  let destDir;
+  if (mod.installTarget === 'reloadedPortable') {
+    destDir = path.join(gamePath, 'Reloaded-II');
+  } else if (mod.installTarget === 'reloadedMods') {
+    destDir = getReloadedModsDir();
+  } else {
+    destDir = path.join(gamePath, mod.id);
+  }
+
+  await fs.mkdir(destDir, { recursive: true });
+
+  const scratch = path.join(gamePath, `.def_scratch_${mod.id}_${Date.now()}`);
+  await fs.mkdir(scratch, { recursive: true });
+  try {
+    const archivePath = path.join(scratch, fileName);
+    await fs.writeFile(archivePath, buffer);
+    if (lower.endsWith('.zip')) {
+      const buf = await fs.readFile(archivePath);
+      await extractZipBufferToDir(buf, destDir);
+    } else if (lower.endsWith('.7z')) {
+      await extract7zArchiveToDir(archivePath, destDir);
+    } else {
+      throw new Error(`Unsupported GitHub asset format: ${fileName}`);
+    }
+  } finally {
+    await fs.rm(scratch, { recursive: true, force: true }).catch(() => {});
   }
 }
 
@@ -758,156 +972,101 @@ Theme=Dark
   }
 }
 
-async function downloadModFromGameBanana(mod, modsPath) {
+async function downloadModFromGameBanana(mod, modsPath, gamePath) {
   if (!mod.gameBananaId) {
     console.log(`No GameBanana ID for ${mod.name}, skipping download`);
     return;
   }
 
   try {
-    // GameBanana API endpoint with required properties parameter
     const apiUrl = `https://gamebanana.com/apiv8/Mod/${mod.gameBananaId}?_csvProperties=_aFiles,_sName,_idRow`;
-    
+
     console.log(`Attempting to download ${mod.name} from: ${apiUrl}`);
-    
-    // Get mod info with proper headers
+
     const modInfo = await axios.get(apiUrl, {
       headers: {
         'User-Agent': 'TheDefinitizer/1.0',
-        'Accept': 'application/json',
+        Accept: 'application/json',
       },
       timeout: 30000
     });
-    
-    console.log(`Mod info retrieved for ${mod.name}`);
-    
-    // Find download URL (check for _aFiles array)
-    if (modInfo.data && modInfo.data._aFiles && modInfo.data._aFiles.length > 0) {
-      const fileInfo = modInfo.data._aFiles[0];
-      const downloadUrl = fileInfo._sDownloadUrl;
-      
-      console.log(`Download URL found: ${downloadUrl}`);
-      
-      // Download the mod with better handling
-      const response = await axios.get(downloadUrl, { 
-        responseType: 'arraybuffer',
-        headers: {
-          'User-Agent': 'TheDefinitizer/1.0',
-          'Accept': 'application/octet-stream, application/zip, */*',
-        },
-        maxRedirects: 5,
-        timeout: 120000, // 2 minutes for download
-        onDownloadProgress: (progressEvent) => {
-          if (progressEvent.total) {
-            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-            console.log(`Download progress for ${mod.name}: ${percentCompleted}%`);
-          }
-        }
-      });
 
-      console.log(`Downloaded ${response.data.byteLength} bytes for ${mod.name}`);
-      console.log(`Content-Type: ${response.headers['content-type']}`);
-      
-      // Check file type by magic bytes
-      const buffer = Buffer.from(response.data);
-      const magicBytes = buffer.slice(0, 6);
-      
-      const zipMagic = Buffer.from([0x50, 0x4b]); // PK (ZIP signature)
-      const sevenZMagic = Buffer.from([0x37, 0x7a, 0xbc, 0xaf, 0x27, 0x1c]); // 7z signature
-      
-      const isZipFile = buffer.slice(0, 2).equals(zipMagic);
-      const is7zFile = magicBytes.equals(sevenZMagic);
-      
-      console.log(`File type - ZIP: ${isZipFile}, 7z: ${is7zFile}, Magic bytes: ${magicBytes.toString('hex')}`);
-      
-      if (!isZipFile && !is7zFile) {
-        // Check if it's an HTML redirect page
-        const contentStr = buffer.toString('utf8', 0, Math.min(500, buffer.length));
-        
-        if (contentStr.includes('<html') || contentStr.includes('<!DOCTYPE')) {
-          throw new Error(`Download appears to be HTML page instead of archive file. The mod may require manual download.`);
-        }
-        
-        console.log('File content start:', contentStr.substring(0, 200));
-        throw new Error(`Downloaded file is not a supported archive format (ZIP/7z). Content-Type: ${response.headers['content-type']}`);
-      }
-
-      // Save and extract based on file type
-      const modFolder = path.join(modsPath, mod.id);
-      await fs.mkdir(modFolder, { recursive: true });
-      
-      console.log(`Extracting ${mod.name}...`);
-      
-      if (isZipFile) {
-        // Handle ZIP files
-        const zipPath = path.join(modsPath, `${mod.id}.zip`);
-        await fs.writeFile(zipPath, response.data);
-        
-        const zip = new AdmZip(zipPath);
-        zip.extractAllTo(modFolder, true);
-        
-        // Clean up zip file
-        await fs.unlink(zipPath);
-        
-      } else if (is7zFile) {
-        // Handle 7z files using 7zip-bin
-        const archivePath = path.join(modsPath, `${mod.id}.7z`);
-        await fs.writeFile(archivePath, response.data);
-        
-        try {
-          // Get the correct path to 7za executable (handles asar unpacking)
-          const sevenZipPath = get7zaPath();
-          
-          // Verify the executable exists
-          try {
-            await fs.access(sevenZipPath);
-          } catch (accessError) {
-            throw new Error(`7za executable not found at: ${sevenZipPath}. Please ensure the app is properly built with asarUnpack configured.`);
-          }
-          
-          // Extract using 7zip-bin
-          // Sanitize paths to prevent command injection
-          const sanitizedSevenZipPath = sevenZipPath.replace(/"/g, '');
-          const sanitizedArchivePath = archivePath.replace(/"/g, '');
-          const sanitizedModFolder = modFolder.replace(/"/g, '');
-          
-          const cmd = `"${sanitizedSevenZipPath}" x "${sanitizedArchivePath}" -o"${sanitizedModFolder}" -y`;
-          logger.log(`Executing 7z command: ${cmd}`);
-          
-          const { stdout, stderr } = await execAsync(cmd);
-          
-          if (stderr && !stderr.includes('Everything is Ok')) {
-            console.error('7z stderr:', stderr);
-          }
-          
-          console.log('7z stdout:', stdout);
-          
-          // Clean up 7z file
-          await fs.unlink(archivePath);
-          
-        } catch (sevenZError) {
-          console.error('7z extraction failed:', sevenZError);
-          // Clean up archive file
-          try {
-            await fs.unlink(archivePath);
-          } catch {}
-          throw new Error(`Failed to extract 7z archive: ${sevenZError.message}`);
-        }
-      }
-      
-      console.log(`Successfully installed ${mod.name}`);
-    } else {
-      console.warn(`No download files found for ${mod.name}`);
+    if (!modInfo.data || !modInfo.data._aFiles || !modInfo.data._aFiles.length) {
       throw new Error(`No download files available for ${mod.name}`);
     }
+
+    const fileInfo = pickGameBananaFile(modInfo.data._aFiles, mod);
+    if (!fileInfo || !fileInfo._sDownloadUrl) {
+      throw new Error(`Could not pick a download file for ${mod.name}`);
+    }
+
+    const downloadUrl = String(fileInfo._sDownloadUrl).replace(/\\\//g, '/');
+    console.log(`Download URL found: ${downloadUrl}`);
+
+    const response = await axios.get(downloadUrl, {
+      responseType: 'arraybuffer',
+      headers: {
+        'User-Agent': 'TheDefinitizer/1.0',
+        Accept: 'application/octet-stream, application/zip, */*',
+      },
+      maxRedirects: 5,
+      timeout: 120000,
+      onDownloadProgress: (progressEvent) => {
+        if (progressEvent.total) {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          console.log(`Download progress for ${mod.name}: ${percentCompleted}%`);
+        }
+      }
+    });
+
+    const buffer = Buffer.from(response.data);
+    const magicBytes = buffer.slice(0, 6);
+    const zipMagic = Buffer.from([0x50, 0x4b]);
+    const sevenZMagic = Buffer.from([0x37, 0x7a, 0xbc, 0xaf, 0x27, 0x1c]);
+    const isZipFile = buffer.slice(0, 2).equals(zipMagic);
+    const is7zFile = magicBytes.equals(sevenZMagic);
+
+    if (!isZipFile && !is7zFile) {
+      const contentStr = buffer.toString('utf8', 0, Math.min(500, buffer.length));
+      if (contentStr.includes('<html') || contentStr.includes('<!DOCTYPE')) {
+        throw new Error(`Download appears to be HTML page instead of archive file. The mod may require manual download.`);
+      }
+      throw new Error(`Downloaded file is not a supported archive format (ZIP/7z). Content-Type: ${response.headers['content-type']}`);
+    }
+
+    const installTarget = mod.installTarget || 'mods';
+    let destDir;
+    if (installTarget === 'gameRoot') {
+      destDir = gamePath;
+    } else if (installTarget === 'reloadedMods') {
+      destDir = getReloadedModsDir();
+    } else {
+      destDir = path.join(modsPath, mod.id);
+    }
+    await fs.mkdir(destDir, { recursive: true });
+
+    const scratch = path.join(gamePath, `.def_scratch_gb_${mod.id}_${Date.now()}`);
+    await fs.mkdir(scratch, { recursive: true });
+    try {
+      if (isZipFile) {
+        await extractZipBufferToDir(buffer, destDir);
+      } else {
+        const archivePath = path.join(scratch, `${mod.id}.7z`);
+        await fs.writeFile(archivePath, buffer);
+        await extract7zArchiveToDir(archivePath, destDir);
+      }
+    } finally {
+      await fs.rm(scratch, { recursive: true, force: true }).catch(() => {});
+    }
+
+    console.log(`Successfully installed ${mod.name}`);
   } catch (error) {
     console.error(`Error downloading ${mod.name}:`, error.message);
-    
-    // More specific error handling
+
     if (error.response) {
       console.error(`HTTP Status: ${error.response.status}`);
       console.error(`Response data:`, error.response.data);
-      
+
       if (error.response.status === 400) {
         throw new Error(`Invalid mod ID ${mod.gameBananaId} for ${mod.name}. Please check the GameBanana mod ID.`);
       } else if (error.response.status === 404) {
@@ -916,7 +1075,7 @@ async function downloadModFromGameBanana(mod, modsPath) {
         throw new Error(`Rate limited by GameBanana. Please try again later.`);
       }
     }
-    
+
     throw new Error(`Failed to download ${mod.name}: ${error.message}`);
   }
 }

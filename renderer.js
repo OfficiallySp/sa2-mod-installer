@@ -243,6 +243,33 @@ async function loadWelcomeScreen() {
     if (welcomeDesc) {
         welcomeDesc.textContent = `This installer will help you set up the best mods for ${currentGameConfig.name} on PC.`;
     }
+
+    const welcomeExtras = document.getElementById('welcome-extras');
+    if (welcomeExtras) {
+        welcomeExtras.classList.add('hidden');
+        welcomeExtras.innerHTML = '';
+        if (currentGameConfig.id === 'heroes') {
+            welcomeExtras.classList.remove('hidden');
+            welcomeExtras.innerHTML = `
+                <p><strong>Sonic PC Collection (DRM-free):</strong> launch the game once vanilla before installing mods. Detection expects <code>Tsonic_win.exe</code> or <code>Sonic Heroes.exe</code> plus a <code>dvdroot</code> folder.</p>
+                <p><strong>Wiki pass (manual):</strong> open the official compatibility page in your browser and skim edition-specific notes.</p>
+                <p>
+                    <a href="#" class="hero-link" data-url="https://www.pcgamingwiki.com/wiki/Sonic_Heroes">PCGamingWiki — Sonic Heroes</a>
+                    ·
+                    <a href="#" class="hero-link" data-url="https://gamebanana.com/mods/620838">Fixed Edition (GameBanana)</a>
+                    ·
+                    <a href="#" class="hero-link" data-url="https://sewer56.dev/Sewer56.Index/games/sonic-heroes/">Sewer56 — Sonic Heroes mod index</a>
+                </p>
+            `;
+            welcomeExtras.querySelectorAll('a.hero-link').forEach((a) => {
+                a.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const url = a.getAttribute('data-url');
+                    if (url) window.api.openExternal(url);
+                });
+            });
+        }
+    }
     
     // Load video
     const videoContainer = document.getElementById('welcome-video-container');
@@ -300,12 +327,29 @@ async function loadCompleteScreen() {
     // Update next steps list to reference the specific game
     const nextStepsList = document.getElementById('next-steps-list');
     if (nextStepsList && currentGameConfig) {
-        const modManagerName = currentGameId === 'sa2' ? 'SA2 Mod Manager' : 'Mod Manager';
-        nextStepsList.innerHTML = `
-            <li>Launch the ${modManagerName} from your ${currentGameConfig.name} folder</li>
-            <li>Configure any additional mod settings if needed</li>
-            <li>Click "Save & Play" in the ${modManagerName} to start the game</li>
-        `;
+        if (currentGameConfig.id === 'heroes') {
+            nextStepsList.innerHTML = `
+                <li>If you installed Fixed Edition, read its readme for merge order and any files you should not duplicate.</li>
+                <li>If you installed Reloaded II, run <code>Reloaded-II\\Reloaded-II.exe</code> from your game folder, add Sonic Heroes as an app, then enable Graphics Essentials and Controller Hook mods.</li>
+                <li>Use only one widescreen / D3D8 path (Fixed Edition vs Graphics Essentials vs legacy ASI wrappers). Do not stack dgVoodoo, D3D8-to-9, and DXVK together.</li>
+                <li><strong>Controllers:</strong> prefer Reloaded Controller Hook mods; only use legacy x360ce-style tools if you are not using Reloaded hooks.</li>
+                <li><strong>DXVK (optional):</strong> treat as experimental for D3D8 Heroes; see <a href="#" class="hero-link" data-url="https://github.com/doitsujin/dxvk/issues/4237">DXVK issue #4237</a> before trying—prefer D3D8→9 or stock D3D8 first.</li>
+            `;
+            nextStepsList.querySelectorAll('a.hero-link').forEach((a) => {
+                a.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const url = a.getAttribute('data-url');
+                    if (url) window.api.openExternal(url);
+                });
+            });
+        } else {
+            const modManagerName = currentGameId === 'sa2' ? 'SA2 Mod Manager' : 'Mod Manager';
+            nextStepsList.innerHTML = `
+                <li>Launch the ${modManagerName} from your ${currentGameConfig.name} folder</li>
+                <li>Configure any additional mod settings if needed</li>
+                <li>Click "Save & Play" in the ${modManagerName} to start the game</li>
+            `;
+        }
     }
 }
 
@@ -334,8 +378,12 @@ async function detectGame() {
     if (detectTitle) detectTitle.textContent = `${currentGameConfig.name} Detection`;
     if (foundMessage) foundMessage.textContent = `✅ ${currentGameConfig.name} found!`;
     if (notFoundMessage) notFoundMessage.textContent = `❌ Could not automatically detect ${currentGameConfig.name}.`;
-    if (pathExample && currentGameConfig.steamFolderName) {
-        pathExample.textContent = `For Example "C:\\Program Files\\Steam\\steamapps\\common\\${currentGameConfig.steamFolderName}".`;
+    if (pathExample) {
+        if (currentGameConfig.folderBrowseHint) {
+            pathExample.textContent = currentGameConfig.folderBrowseHint;
+        } else if (currentGameConfig.steamFolderName) {
+            pathExample.textContent = `For Example "C:\\Program Files\\Steam\\steamapps\\common\\${currentGameConfig.steamFolderName}".`;
+        }
     }
     
     // Show spinner
@@ -562,6 +610,11 @@ async function startInstallation() {
     
     // Disable checkbox during installation
     openModloaderCheckbox.disabled = true;
+
+    const openModloaderRow = document.querySelector('#step-install .install-checkbox');
+    if (openModloaderRow) {
+        openModloaderRow.style.display = currentGameId === 'heroes' ? 'none' : '';
+    }
     
     // Set up progress listener
     window.api.onInstallProgress((data) => {
@@ -595,8 +648,12 @@ async function startInstallation() {
             const completeSuccessMessage = document.getElementById('complete-success-message');
             const modManagerLabel = document.getElementById('open-modloader-label');
             if (completeMessage) {
-                const modManagerName = currentGameId === 'sa2' ? 'SA2 Mod Manager' : 'Mod Manager';
-                completeMessage.textContent = `You can now launch ${currentGameConfig.name} with the ${modManagerName}.`;
+                if (currentGameId === 'heroes') {
+                    completeMessage.textContent = 'Follow the next-step checklist: enable mods in Reloaded II if you installed it, then launch Sonic Heroes from your game folder.';
+                } else {
+                    const modManagerName = currentGameId === 'sa2' ? 'SA2 Mod Manager' : 'Mod Manager';
+                    completeMessage.textContent = `You can now launch ${currentGameConfig.name} with the ${modManagerName}.`;
+                }
             }
             if (completeSuccessMessage) {
                 completeSuccessMessage.textContent = `${currentGameConfig.name} mods have been installed successfully.`;
@@ -626,6 +683,10 @@ async function startInstallation() {
     } finally {
         // Re-enable checkbox after installation
         openModloaderCheckbox.disabled = false;
+        const openModloaderRow = document.querySelector('#step-install .install-checkbox');
+        if (openModloaderRow) {
+            openModloaderRow.style.display = currentGameId === 'heroes' ? 'none' : '';
+        }
     }
     
     // Clean up listener

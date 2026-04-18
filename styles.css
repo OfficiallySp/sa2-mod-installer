@@ -104,6 +104,26 @@ body {
     margin-bottom: 3px;
 }
 
+.welcome-extras {
+    margin: 10px 0;
+    padding: 10px;
+    background: #edf2f7;
+    border: 1px solid #cbd5e0;
+    border-radius: 5px;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.welcome-extras.hidden {
+    display: none;
+}
+
+.welcome-extras a.hero-link {
+    color: #2b6cb0;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
 /* Status Boxes */
 .warning-box, .error-box, .success-box, .info-box {
     padding: 8px;
