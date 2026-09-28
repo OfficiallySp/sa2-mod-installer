@@ -268,6 +268,26 @@ async function loadWelcomeScreen() {
                     if (url) window.api.openExternal(url);
                 });
             });
+        } else if (currentGameConfig.id === 'forces') {
+            welcomeExtras.classList.remove('hidden');
+            welcomeExtras.innerHTML = `
+                <p><strong>Steam copy:</strong> use a legit PC build (Steam AppID 637100). Hedge Mod Manager and Overclocked do not support pirated installs.</p>
+                <p><strong>Disk:</strong> prefer installing the game and large mods on an <strong>SSD</strong> (Overclocked authors recommend this).</p>
+                <p>
+                    <a href="#" class="hero-link" data-url="https://github.com/hedge-dev/HedgeModManager/releases/latest">Hedge Mod Manager 8 (Windows, Linux, Steam Deck)</a>
+                    ·
+                    <a href="#" class="hero-link" data-url="https://github.com/thesupersonic16/HedgeModManager/releases/latest">Hedge Mod Manager 7 (legacy Windows)</a>
+                    ·
+                    <a href="#" class="hero-link" data-url="https://gamebanana.com/mods/485051">Sonic Forces Overclocked (GameBanana)</a>
+                </p>
+            `;
+            welcomeExtras.querySelectorAll('a.hero-link').forEach((a) => {
+                a.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const url = a.getAttribute('data-url');
+                    if (url) window.api.openExternal(url);
+                });
+            });
         }
     }
     
@@ -304,6 +324,12 @@ function extractYouTubeId(url) {
     return null;
 }
 
+function getModManagerDisplayName(gameId) {
+    if (gameId === 'sa2') return 'SA2 Mod Manager';
+    if (gameId === 'forces') return 'Hedge Mod Manager 8';
+    return 'Mod Manager';
+}
+
 async function loadCompleteScreen() {
     if (!currentGameConfig) {
         currentGameConfig = await window.api.getCurrentGame();
@@ -320,7 +346,7 @@ async function loadCompleteScreen() {
     // Update install complete message (in case user navigates back/forward)
     const installCompleteMessage = document.getElementById('install-complete-message');
     if (installCompleteMessage && currentGameConfig) {
-        const modManagerName = currentGameId === 'sa2' ? 'SA2 Mod Manager' : 'Mod Manager';
+        const modManagerName = getModManagerDisplayName(currentGameId);
         installCompleteMessage.textContent = `You can now launch ${currentGameConfig.name} with the ${modManagerName}.`;
     }
     
@@ -342,8 +368,17 @@ async function loadCompleteScreen() {
                     if (url) window.api.openExternal(url);
                 });
             });
+        } else if (currentGameConfig.id === 'forces') {
+            const modManagerName = getModManagerDisplayName(currentGameId);
+            nextStepsList.innerHTML = `
+                <li>Open <code>build\\main\\projects\\exec\\HedgeModManager.exe</code> (this installer places it next to <code>Sonic Forces.exe</code>).</li>
+                <li>In ${modManagerName}: <strong>Settings</strong> → Install Mod Loader; <strong>Codes</strong> → Download Community Codes; enable <strong>Redirect Default Save File</strong> for Overclocked.</li>
+                <li><strong>Overclocked:</strong> download from GameBanana <em>alternate mirrors</em>, extract with 7-Zip into the mods folder path from Settings, enable only the <code>SFO</code> mod, keep <strong>60 FPS</strong> and <strong>no FPS codes</strong>.</li>
+                <li><strong>High FPS (vanilla / other mods):</strong> optional HMM Graphics → FPS codes or hex edits can break physics and some stages; cutscenes and some QTEs stay capped lower.</li>
+                <li>Click <strong>Save and Play</strong> in ${modManagerName} when ready.</li>
+            `;
         } else {
-            const modManagerName = currentGameId === 'sa2' ? 'SA2 Mod Manager' : 'Mod Manager';
+            const modManagerName = getModManagerDisplayName(currentGameId);
             nextStepsList.innerHTML = `
                 <li>Launch the ${modManagerName} from your ${currentGameConfig.name} folder</li>
                 <li>Configure any additional mod settings if needed</li>
@@ -651,7 +686,7 @@ async function startInstallation() {
                 if (currentGameId === 'heroes') {
                     completeMessage.textContent = 'Follow the next-step checklist: enable mods in Reloaded II if you installed it, then launch Sonic Heroes from your game folder.';
                 } else {
-                    const modManagerName = currentGameId === 'sa2' ? 'SA2 Mod Manager' : 'Mod Manager';
+                    const modManagerName = getModManagerDisplayName(currentGameId);
                     completeMessage.textContent = `You can now launch ${currentGameConfig.name} with the ${modManagerName}.`;
                 }
             }
@@ -659,7 +694,7 @@ async function startInstallation() {
                 completeSuccessMessage.textContent = `${currentGameConfig.name} mods have been installed successfully.`;
             }
             if (modManagerLabel && currentGameConfig.modManagerUrl) {
-                const modManagerName = currentGameId === 'sa2' ? 'SA2 Mod Manager' : 'Mod Manager';
+                const modManagerName = getModManagerDisplayName(currentGameId);
                 modManagerLabel.textContent = `Open ${modManagerName} after installation`;
             }
         }

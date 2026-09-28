@@ -280,14 +280,33 @@ const GAMES_CONFIG = {
   forces: {
     id: 'forces',
     name: 'Sonic Forces',
-    steamAppId: null,
+    steamAppId: 637100,
+    executableSubdir: 'build/main/projects/exec',
     executables: ['Sonic Forces.exe'],
     steamFolderName: 'Sonic Forces',
-    modManagerUrl: null,
-    defaultModsPath: 'mods',
+    modManagerUrl: 'https://github.com/hedge-dev/HedgeModManager/releases/latest',
+    modManagerExeFile: 'HedgeModManager.exe',
+    modManagerInstallDirRelativeToGame: 'build/main/projects/exec',
+    skipModsIniBootstrap: true,
+    skipConfigureModsIni: true,
+    defaultModsPath: 'build/main/projects/exec/mods',
+    folderBrowseHint:
+      'Choose the Steam "Sonic Forces" folder (contains build\\main\\projects\\exec\\Sonic Forces.exe)—e.g. ...\\steamapps\\common\\Sonic Forces. Use a legit Steam copy (Steam AppID 637100). Prefer an SSD for large mods like Overclocked.',
     welcomeVideoUrl: 'https://www.youtube.com/embed/MnPCLUsyErA',
     icon: 'assets/game-icons/forces.png',
-    mods: []
+    mods: [
+      {
+        id: 'forces_overclocked',
+        name: 'Sonic Forces Overclocked',
+        description:
+          'Large campaign overhaul mod (sequel-style expansion). <strong>Manual download only:</strong> the GameBanana page zip is a placeholder—use the <strong>Google Drive / MEGA / Mediafire</strong> mirrors on the mod page, then extract with <strong>7-Zip</strong> directly into the <strong>mods folder path</strong> shown in Hedge Mod Manager Settings (move the <code>SFO</code> folder there). In HMM: install the mod loader, <strong>Download Community Codes</strong>, enable <strong>Redirect Default Save File</strong>, keep <strong>only this mod</strong> enabled (FreeCam is OK per authors). Prefer <strong>Hedge Mod Manager 8</strong> (multiplatform beta); otherwise <strong>HMM 7.12-4+</strong>. <strong>Overclocked:</strong> cap the game at <strong>60 FPS</strong> and do <strong>not</strong> enable FPS codes—authors require this for stability. <strong>Vanilla / other mods:</strong> high FPS via HMM codes or hex edits can break physics and some stages; cutscenes stay ~30 FPS internally and some QTEs cap at 60. Saves and troubleshooting: https://duckdealer1.github.io/forces-overclocked/about.html',
+        required: false,
+        gameBananaId: 485051,
+        manualDownloadOnly: true,
+        preview: 'assets/placeholder.png',
+        author: 'Overclocked Team'
+      }
+    ]
   },
   frontiers: {
     id: 'frontiers',
@@ -542,6 +561,13 @@ ipcMain.handle('install-mods', async (event, { gamePath, selectedMods, openModlo
       if (mod.id === 'sa2_mod_loader' && gameId === 'sa2') {
         // Mod loader is installed with the mod manager, skip separate download
         console.log(`Skipping separate download for ${mod.name} - included with mod manager`);
+      } else if (mod.manualDownloadOnly) {
+        event.sender.send('install-progress', {
+          status: 'installing',
+          message: `${mod.name}: skipped auto-download (use GameBanana alternate mirrors and 7-Zip per mod description).`,
+          progress: Math.round((completed / total) * 100)
+        });
+        console.log(`Skipping auto-download for ${mod.name} (manualDownloadOnly)`);
       } else if (mod.githubRelease) {
         await downloadModFromGithubRelease(mod, gamePath);
       } else if (mod.gameBananaId) {
@@ -553,10 +579,13 @@ ipcMain.handle('install-mods', async (event, { gamePath, selectedMods, openModlo
       }
 
       completed++;
-      event.sender.send('install-progress', { 
-        status: 'installing', 
-        message: `Installed ${mod.name}`, 
-        progress: Math.round((completed / total) * 100) 
+      const progressNote = mod.manualDownloadOnly
+        ? `${mod.name}: manual install (see description)`
+        : `Installed ${mod.name}`;
+      event.sender.send('install-progress', {
+        status: 'installing',
+        message: progressNote,
+        progress: Math.round((completed / total) * 100)
       });
     }
 
@@ -568,12 +597,18 @@ ipcMain.handle('install-mods', async (event, { gamePath, selectedMods, openModlo
         progress: 100 
       });
 
-      await configureModsIni(gamePath, selectedMods, gameConfig);
+      if (!gameConfig.skipConfigureModsIni) {
+        await configureModsIni(gamePath, selectedMods, gameConfig);
+      }
 
       // Open mod manager if requested
       if (openModloader && gameConfig.modManagerUrl) {
-        const modManagerExe = gameId === 'sa2' ? 'SA2ModManager.exe' : 'ModManager.exe';
-        const modManagerPath = path.join(gamePath, modManagerExe);
+        const modManagerExe =
+          gameConfig.modManagerExeFile || (gameId === 'sa2' ? 'SA2ModManager.exe' : 'ModManager.exe');
+        const modManagerDir = gameConfig.modManagerInstallDirRelativeToGame
+          ? path.join(gamePath, gameConfig.modManagerInstallDirRelativeToGame)
+          : gamePath;
+        const modManagerPath = path.join(modManagerDir, modManagerExe);
         try {
           // Check if the file exists
           await fs.access(modManagerPath);
@@ -685,7 +720,10 @@ async function validateGamePath(gamePath, gameConfig) {
   if (!gamePath || !gameConfig) return false;
 
   try {
-    const files = await fs.readdir(gamePath);
+    const exeDir = gameConfig.executableSubdir
+      ? path.join(gamePath, gameConfig.executableSubdir)
+      : gamePath;
+    const files = await fs.readdir(exeDir);
     const hasExe = gameConfig.executables.some(exe => files.includes(exe));
     if (!hasExe) return false;
     if (gameConfig.requiredFolderMarkers?.length) {
@@ -862,27 +900,38 @@ async function downloadModManager(gamePath, gameConfig) {
 
     const release = releaseResponse.data;
     console.log(`Found ${gameConfig.name} Mod Manager ${release.tag_name}`);
-    
-    // Find the Windows executable in assets
-    const windowsAsset = release.assets.find(asset => 
-      asset.name.toLowerCase().includes('windows') || 
-      asset.name.toLowerCase().endsWith('.exe') ||
-      asset.name.toLowerCase().endsWith('.zip')
-    );
+
+    const targetDir = gameConfig.modManagerInstallDirRelativeToGame
+      ? path.join(gamePath, gameConfig.modManagerInstallDirRelativeToGame)
+      : gamePath;
+    await fs.mkdir(targetDir, { recursive: true });
+
+    let windowsAsset = null;
+    if (gameConfig.modManagerExeFile) {
+      windowsAsset = release.assets.find((a) => a.name === gameConfig.modManagerExeFile);
+    }
+    if (!windowsAsset) {
+      windowsAsset = release.assets.find(
+        (asset) =>
+          asset.name.toLowerCase().includes('windows') ||
+          asset.name.toLowerCase().endsWith('.exe') ||
+          asset.name.toLowerCase().endsWith('.zip') ||
+          asset.name.toLowerCase().endsWith('.7z')
+      );
+    }
 
     if (!windowsAsset) {
       throw new Error('Could not find Windows executable in GitHub releases');
     }
 
     console.log(`Downloading ${windowsAsset.name} (${Math.round(windowsAsset.size / 1024 / 1024)} MB)`);
-    
-    // Download the mod manager
+
     const downloadResponse = await axios.get(windowsAsset.browser_download_url, {
       responseType: 'arraybuffer',
       headers: {
         'User-Agent': 'TheDefinitizer/1.0'
       },
-      timeout: 300000, // 5 minutes for large download
+      timeout: 300000,
       onDownloadProgress: (progressEvent) => {
         if (progressEvent.total) {
           const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
@@ -891,67 +940,48 @@ async function downloadModManager(gamePath, gameConfig) {
       }
     });
 
-    // Handle different file types
     const fileName = windowsAsset.name.toLowerCase();
-    const modManagerExe = gameConfig.id === 'sa2' ? 'SA2ModManager.exe' : 'ModManager.exe';
-    
+    const modManagerExe =
+      gameConfig.modManagerExeFile || (gameConfig.id === 'sa2' ? 'SA2ModManager.exe' : 'ModManager.exe');
+
     if (fileName.endsWith('.exe')) {
-      // Direct executable
-      const modManagerPath = path.join(gamePath, modManagerExe);
-      await fs.writeFile(modManagerPath, downloadResponse.data);
+      const modManagerPath = path.join(targetDir, modManagerExe);
+      await fs.writeFile(modManagerPath, Buffer.from(downloadResponse.data));
       console.log(`${gameConfig.name} Mod Manager executable installed`);
-      
     } else if (fileName.endsWith('.zip')) {
-      // ZIP archive - extract it
       console.log(`Extracting ${gameConfig.name} Mod Manager from ZIP...`);
-      
-      const tempZipPath = path.join(gamePath, 'temp_modmanager.zip');
-      await fs.writeFile(tempZipPath, downloadResponse.data);
-      
-      const zip = new AdmZip(tempZipPath);
-      const entries = zip.getEntries();
-      
-      // Find the main executable
-      const exeEntry = entries.find(entry => entry.entryName.toLowerCase().endsWith('.exe'));
-      if (exeEntry) {
-        const modManagerPath = path.join(gamePath, modManagerExe);
-        await fs.writeFile(modManagerPath, exeEntry.getData());
-        console.log(`Extracted ${exeEntry.entryName} as ${modManagerExe}`);
-      }
-      
-      // Extract other important files (DLLs, etc.)
-      for (const entry of entries) {
-        if (!entry.isDirectory) {
-          const entryPath = path.join(gamePath, path.basename(entry.entryName));
-          // Don't overwrite the main executable we already renamed
-          if (!entry.entryName.toLowerCase().endsWith('.exe') || !exeEntry) {
-            await fs.writeFile(entryPath, entry.getData());
-            console.log(`Extracted ${entry.entryName}`);
-          }
-        }
-      }
-      
-      // Clean up temp file
-      await fs.unlink(tempZipPath);
-      
+      const tempZipPath = path.join(targetDir, 'temp_modmanager.zip');
+      await fs.writeFile(tempZipPath, Buffer.from(downloadResponse.data));
+      const buf = await fs.readFile(tempZipPath);
+      await extractZipBufferToDir(buf, targetDir);
+      await fs.unlink(tempZipPath).catch(() => {});
+    } else if (fileName.endsWith('.7z')) {
+      const temp7zPath = path.join(targetDir, 'temp_modmanager.7z');
+      await fs.writeFile(temp7zPath, Buffer.from(downloadResponse.data));
+      await extract7zArchiveToDir(temp7zPath, targetDir);
+      await fs.unlink(temp7zPath).catch(() => {});
     } else {
       throw new Error(`Unsupported mod manager file format: ${fileName}`);
     }
 
-    // Create basic mods.ini if it doesn't exist
-    const modsIni = path.join(gamePath, 'mods.ini');
-    try {
-      await fs.access(modsIni);
-    } catch {
-      await fs.writeFile(modsIni, `; ${gameConfig.name} Mods Configuration
+    if (!gameConfig.skipModsIniBootstrap) {
+      const modsIni = path.join(gamePath, 'mods.ini');
+      try {
+        await fs.access(modsIni);
+      } catch {
+        await fs.writeFile(
+          modsIni,
+          `; ${gameConfig.name} Mods Configuration
 [Main]
 EnabledMods=
 UpdateCheck=1
 
 [ModManager]
 Theme=Dark
-`);
-      console.log('Created mods.ini configuration file');
+`
+        );
+        console.log('Created mods.ini configuration file');
+      }
     }
     
     console.log(`${gameConfig.name} Mod Manager installation completed successfully`);
